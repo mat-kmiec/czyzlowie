@@ -8,9 +8,9 @@ spring:
   application:
     name: czyzlowie-backend
   datasource:
-    url: jdbc:postgresql://localhost:5432/czyzlowie-db
-    username: czyzlowie-admin
-    password: mysecretpassword
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/czyzlowie-db}
+    username: ${SPRING_DATASOURCE_USERNAME:czyzlowie-admin}
+    password: ${SPRING_DATASOURCE_PASSWORD:mysecretpassword}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -24,7 +24,7 @@ spring:
   # --- Liquibase ---
   liquibase:
     enabled: true
-    change-log: classpath:db.changelog/db.changelog-master.yaml
+    change-log: classpath:db/changelog/changelog-master.yaml
 
 #    --- Swagger/OpenAPI ---
 springdoc:

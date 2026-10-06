@@ -1,0 +1,48 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: czyzlowie-postgres
+    environment:
+      POSTGRES_USER: czyzlowie-admin
+      POSTGRES_PASSWORD: mysecretpassword
+      POSTGRES_DB: czyzlowie-db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - czyzlowie-net
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: czyzlowie-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@czyzlowie.pl
+      PGADMIN_DEFAULT_PASSWORD: mysecretpassword
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    networks:
+      - czyzlowie-net
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+  backend:
+    build: ./backend
+    container_name: czyzlowie-backend
+    environment:
+      DATABASE_URL: postgres://czyzlowie-admin:mysecretpassword@postgres:5432/czyzlowie-db
+    ports:
+      - "8080:8000"
+    depends_on:
+      - postgres
+    networks:
+      - czyzlowie-net
+
+volumes:
+  postgres_data:
+  pgadmin_data:
+
+networks:
+  czyzlowie-net:
+    driver: bridge
