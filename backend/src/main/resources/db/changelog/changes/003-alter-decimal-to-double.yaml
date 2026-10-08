@@ -1,0 +1,105 @@
+databaseChangeLog:
+  - changeSet:
+      id: 006-modify-decimal-to-double
+      author: matkmiec
+      changes:
+        - modifyDataType:
+            tableName: imgw_synop_station
+            columnName: lat
+            newDataType: DOUBLE PRECISION
+        - modifyDataType:
+            tableName: imgw_synop_station
+            columnName: lon
+            newDataType: DOUBLE PRECISION
+        - modifyDataType:
+            tableName: imgw_meteo_station
+            columnName: lat
+            newDataType: DOUBLE PRECISION
+        - modifyDataType:
+            tableName: imgw_meteo_station
+            columnName: lon
+            newDataType: DOUBLE PRECISION
+        - modifyDataType:
+            tableName: imgw_hydro_station
+            columnName: lat
+            newDataType: DOUBLE PRECISION
+        - modifyDataType:
+            tableName: imgw_hydro_station
+            columnName: lon
+            newDataType: DOUBLE PRECISION
+        - modifyDataType:
+            tableName: imgw_synop_data
+            columnName: temperature
+            newDataType: DOUBLE PRECISION
+        - modifyDataType:
+            tableName: imgw_synop_data
+            columnName: wind_speed
+            newDataType: DOUBLE PRECISION
+        - modifyDataType:
+            tableName: imgw_synop_data
+            columnName: relative_humidity
+            newDataType: DOUBLE PRECISION
+        - modifyDataType:
+            tableName: imgw_synop_data
+            columnName: precipitation
+            newDataType: DOUBLE PRECISION
+        - modifyDataType:
+            tableName: imgw_synop_data
+            columnName: pressure
+            newDataType: DOUBLE PRECISION
+        - modifyDataType:
+            tableName: imgw_meteo_data
+            columnName: ground_temperature
+            newDataType: DOUBLE PRECISION
+        - modifyDataType:
+            tableName: imgw_meteo_data
+            columnName: air_temperature
+            newDataType: DOUBLE PRECISION
+        - modifyDataType:
+            tableName: imgw_meteo_data
+            columnName: wind_speed
+            newDataType: DOUBLE PRECISION
+        - modifyDataType:
+            tableName: imgw_meteo_data
+            columnName: wind_gust_10min
+            newDataType: DOUBLE PRECISION
+        - modifyDataType:
+            tableName: imgw_meteo_data
+            columnName: relative_humidity
+            newDataType: DOUBLE PRECISION
+        - modifyDataType:
+            tableName: imgw_meteo_data
+            columnName: precipitation_10min
+            newDataType: DOUBLE PRECISION
+        - modifyDataType:
+            tableName: imgw_hydro_data
+            columnName: water_level
+            newDataType: DOUBLE PRECISION
+        - modifyDataType:
+            tableName: imgw_hydro_data
+            columnName: water_temperature
+            newDataType: DOUBLE PRECISION
+        - modifyDataType:
+            tableName: imgw_hydro_data
+            columnName: flow
+            newDataType: DOUBLE PRECISION
+        - modifyDataType:
+            tableName: open_meteo_forecast
+            columnName: temperature
+            newDataType: DOUBLE PRECISION
+        - modifyDataType:
+            tableName: open_meteo_forecast
+            columnName: wind_speed
+            newDataType: DOUBLE PRECISION
+        - modifyDataType:
+            tableName: open_meteo_forecast
+            columnName: relative_humidity
+            newDataType: DOUBLE PRECISION
+        - modifyDataType:
+            tableName: open_meteo_forecast
+            columnName: precipitation
+            newDataType: DOUBLE PRECISION
+        - modifyDataType:
+            tableName: open_meteo_forecast
+            columnName: pressure
+            newDataType: DOUBLE PRECISION

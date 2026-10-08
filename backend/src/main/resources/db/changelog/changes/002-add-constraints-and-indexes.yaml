@@ -1,0 +1,35 @@
+databaseChangeLog:
+  - changeSet:
+      id: 005-add-unique-constraints-and-indexes
+      author: matkmiec
+      changes:
+        - addUniqueConstraint:
+            tableName: imgw_synop_data
+            columnNames: station_id, measurement_time
+            constraintName: uk_synop_station_time
+        - addUniqueConstraint:
+            tableName: imgw_meteo_data
+            columnNames: station_id, measurement_time
+            constraintName: uk_meteo_station_time
+        - addUniqueConstraint:
+            tableName: imgw_hydro_data
+            columnNames: station_id, measurement_time
+            constraintName: uk_hydro_station_time
+        - createIndex:
+            tableName: imgw_synop_data
+            indexName: idx_synop_measurement_time
+            columns:
+              - column:
+                  name: measurement_time
+        - createIndex:
+            tableName: imgw_meteo_data
+            indexName: idx_meteo_measurement_time
+            columns:
+              - column:
+                  name: measurement_time
+        - createIndex:
+            tableName: imgw_hydro_data
+            indexName: idx_hydro_measurement_time
+            columns:
+              - column:
+                  name: measurement_time

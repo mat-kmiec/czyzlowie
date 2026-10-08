@@ -1,4 +1,10 @@
 databaseChangeLog:
   - include:
-      file: changes/001-init-weather-schema.yaml
+      file: changes/001-init.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changes/002-add-constraints-and-indexes.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changes/003-alter-decimal-to-double.yaml
       relativeToChangelogFile: true

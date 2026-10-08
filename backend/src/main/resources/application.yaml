@@ -3,7 +3,6 @@ server:
   servlet:
     context-path: /api
 
-# --- Spring ---
 spring:
   application:
     name: czyzlowie-backend
@@ -18,22 +17,22 @@ spring:
       show-sql: true
       properties:
         hibernate:
+          jdbc.batch_size: 50
+          order_inserts: true
+          order_updates: true
           format_sql: true
           dialect: org.hibernate.dialect.PostgreSQLDialect
 
-  # --- Liquibase ---
   liquibase:
     enabled: true
     change-log: classpath:db/changelog/changelog-master.yaml
 
-#    --- Swagger/OpenAPI ---
 springdoc:
   api-docs:
     path: /api-docs
   swagger-ui:
     path: /swagger-ui.html
 
-#    --- Resilence4j ---
 resilience4j:
   circuitbreaker:
     instances:
@@ -50,3 +49,15 @@ resilience4j:
         limitForPeriod: 20
         limitRefreshPeriod: 1s
         timeoutDuration: 0s
+
+weather:
+  api:
+    imgw-base-url: https://danepubliczne.imgw.pl/api
+    open-meteo-base-url: https://api.open-meteo.com/v1
+  sync:
+    enabled: true
+    synop-cron: "0 15 * * * *"
+    meteo-cron: "0 */10 * * * *"
+    hydro-cron: "0 */10 * * * *"
+    batch-size: 50
+    deduplication-window-hours: 48

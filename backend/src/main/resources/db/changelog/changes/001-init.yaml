@@ -2,6 +2,7 @@ databaseChangeLog:
   - changeSet:
       id: 001-create-station-tables
       author: matkmiec
+      validCheckSum: ANY
       changes:
         - createTable:
             tableName: imgw_synop_station
@@ -16,10 +17,10 @@ databaseChangeLog:
                   constraints: { nullable: false }
               - column:
                   name: lat
-                  type: DECIMAL(10, 6)
+                  type: DOUBLE PRECISION
               - column:
                   name: lon
-                  type: DECIMAL(10, 6)
+                  type: DOUBLE PRECISION
               - column:
                   name: is_active
                   type: BOOLEAN
@@ -39,10 +40,10 @@ databaseChangeLog:
                   constraints: { nullable: false }
               - column:
                   name: lat
-                  type: DECIMAL(10, 6)
+                  type: DOUBLE PRECISION
               - column:
                   name: lon
-                  type: DECIMAL(10, 6)
+                  type: DOUBLE PRECISION
               - column:
                   name: elevation_asl
                   type: INT
@@ -74,10 +75,10 @@ databaseChangeLog:
                   type: VARCHAR(255)
               - column:
                   name: lat
-                  type: DECIMAL(10, 6)
+                  type: DOUBLE PRECISION
               - column:
                   name: lon
-                  type: DECIMAL(10, 6)
+                  type: DOUBLE PRECISION
               - column:
                   name: is_active
                   type: BOOLEAN
@@ -87,6 +88,7 @@ databaseChangeLog:
   - changeSet:
       id: 002-create-observation-tables
       author: matkmiec
+      validCheckSum: ANY
       changes:
         - createTable:
             tableName: imgw_synop_data
@@ -107,12 +109,24 @@ databaseChangeLog:
                   name: measurement_time
                   type: TIMESTAMP
                   constraints: { nullable: false }
-              - column: { name: temperature, type: DECIMAL(8, 2) }
-              - column: { name: wind_speed, type: DECIMAL(8, 2) }
-              - column: { name: wind_direction, type: INT }
-              - column: { name: relative_humidity, type: DECIMAL(8, 2) }
-              - column: { name: precipitation, type: DECIMAL(8, 2) }
-              - column: { name: pressure, type: DECIMAL(8, 2) }
+              - column:
+                  name: temperature
+                  type: DOUBLE PRECISION
+              - column:
+                  name: wind_speed
+                  type: DOUBLE PRECISION
+              - column:
+                  name: wind_direction
+                  type: INT
+              - column:
+                  name: relative_humidity
+                  type: DOUBLE PRECISION
+              - column:
+                  name: precipitation
+                  type: DOUBLE PRECISION
+              - column:
+                  name: pressure
+                  type: DOUBLE PRECISION
 
         - createTable:
             tableName: imgw_meteo_data
@@ -133,13 +147,27 @@ databaseChangeLog:
                   name: measurement_time
                   type: TIMESTAMP
                   constraints: { nullable: false }
-              - column: { name: ground_temperature, type: DECIMAL(8, 2) }
-              - column: { name: air_temperature, type: DECIMAL(8, 2) }
-              - column: { name: wind_speed, type: DECIMAL(8, 2) }
-              - column: { name: wind_direction, type: INT }
-              - column: { name: wind_gust_10min, type: DECIMAL(8, 2) }
-              - column: { name: relative_humidity, type: DECIMAL(8, 2) }
-              - column: { name: precipitation_10min, type: DECIMAL(8, 2) }
+              - column:
+                  name: ground_temperature
+                  type: DOUBLE PRECISION
+              - column:
+                  name: air_temperature
+                  type: DOUBLE PRECISION
+              - column:
+                  name: wind_speed
+                  type: DOUBLE PRECISION
+              - column:
+                  name: wind_direction
+                  type: INT
+              - column:
+                  name: wind_gust_10min
+                  type: DOUBLE PRECISION
+              - column:
+                  name: relative_humidity
+                  type: DOUBLE PRECISION
+              - column:
+                  name: precipitation_10min
+                  type: DOUBLE PRECISION
 
         - createTable:
             tableName: imgw_hydro_data
@@ -160,15 +188,26 @@ databaseChangeLog:
                   name: measurement_time
                   type: TIMESTAMP
                   constraints: { nullable: false }
-              - column: { name: water_level, type: DECIMAL(8, 2) }
-              - column: { name: water_temperature, type: DECIMAL(8, 2) }
-              - column: { name: flow, type: DECIMAL(8, 2) }
-              - column: { name: ice_phenomenon, type: INT }
-              - column: { name: overgrowth_phenomenon, type: INT }
+              - column:
+                  name: water_level
+                  type: DOUBLE PRECISION
+              - column:
+                  name: water_temperature
+                  type: DOUBLE PRECISION
+              - column:
+                  name: flow
+                  type: DOUBLE PRECISION
+              - column:
+                  name: ice_phenomenon
+                  type: INT
+              - column:
+                  name: overgrowth_phenomenon
+                  type: INT
 
   - changeSet:
       id: 003-create-forecast-table
       author: matkmiec
+      validCheckSum: ANY
       changes:
         - createTable:
             tableName: open_meteo_forecast
@@ -193,16 +232,29 @@ databaseChangeLog:
                   name: generated_at
                   type: TIMESTAMP
                   constraints: { nullable: false }
-              - column: { name: temperature, type: DECIMAL(8, 2) }
-              - column: { name: wind_speed, type: DECIMAL(8, 2) }
-              - column: { name: wind_direction, type: INT }
-              - column: { name: relative_humidity, type: DECIMAL(8, 2) }
-              - column: { name: precipitation, type: DECIMAL(8, 2) }
-              - column: { name: pressure, type: DECIMAL(8, 2) }
+              - column:
+                  name: temperature
+                  type: DOUBLE PRECISION
+              - column:
+                  name: wind_speed
+                  type: DOUBLE PRECISION
+              - column:
+                  name: wind_direction
+                  type: INT
+              - column:
+                  name: relative_humidity
+                  type: DOUBLE PRECISION
+              - column:
+                  name: precipitation
+                  type: DOUBLE PRECISION
+              - column:
+                  name: pressure
+                  type: DOUBLE PRECISION
 
   - changeSet:
       id: 004-create-sync-logs-table
       author: matkmiec
+      validCheckSum: ANY
       changes:
         - createTable:
             tableName: weather_sync_log
@@ -232,4 +284,4 @@ databaseChangeLog:
                   type: TIMESTAMP
               - column:
                   name: error_message
-                  type: TEXT
+                  type: VARCHAR(4000)
