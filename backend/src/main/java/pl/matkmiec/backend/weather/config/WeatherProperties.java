@@ -18,6 +18,9 @@ public record WeatherProperties(
             @DefaultValue("0 15 * * * *") String synopCron,
             @DefaultValue("0 */10 * * * *") String meteoCron,
             @DefaultValue("0 */10 * * * *") String hydroCron,
+            @DefaultValue("0 0 */6 * * *") String openMeteoCron,
+            @DefaultValue("1") int openMeteoPastDays,
+            @DefaultValue("6") int openMeteoForecastDays,
             @DefaultValue("50") int batchSize,
             @DefaultValue("48") int deduplicationWindowHours
     ) {}

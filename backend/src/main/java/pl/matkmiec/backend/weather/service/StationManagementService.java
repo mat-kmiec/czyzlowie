@@ -26,6 +26,7 @@ public class StationManagementService {
     private final ImgwSynopStationRepository synopStationRepo;
     private final ImgwMeteoStationRepository meteoStationRepo;
     private final ImgwHydroStationRepository hydroStationRepo;
+    private final SynopStationCoordinatesRegistry synopStationCoordinatesRegistry;
 
     @Transactional
     public Map<String, ImgwSynopStation> autoDiscoverSynopStations(List<ImgwSynopResponseDto> dtos) {
@@ -36,26 +37,64 @@ public class StationManagementService {
         Map<String, ImgwSynopStation> existingMap = synopStationRepo.findAll().stream()
                 .collect(Collectors.toMap(ImgwSynopStation::getId, Function.identity(), (a, b) -> a, HashMap::new));
 
-        List<ImgwSynopStation> newStations = new ArrayList<>();
+        List<ImgwSynopStation> stationsToSave = new ArrayList<>();
         for (ImgwSynopResponseDto dto : dtos) {
-            if (dto.idStacji() != null && !dto.idStacji().isBlank() && !existingMap.containsKey(dto.idStacji().trim())) {
+            if (dto.idStacji() != null && !dto.idStacji().isBlank()) {
                 String id = dto.idStacji().trim();
-                ImgwSynopStation station = ImgwSynopStation.builder()
-                        .id(id)
-                        .name(dto.stacja() != null && !dto.stacja().isBlank() ? dto.stacja().trim() : id)
-                        .isActive(true)
-                        .build();
-                newStations.add(station);
-                existingMap.put(id, station);
+                String name = dto.stacja() != null && !dto.stacja().isBlank() ? dto.stacja().trim() : id;
+                ImgwSynopStation station = existingMap.get(id);
+
+                if (station == null) {
+                    ImgwSynopStation newStation = ImgwSynopStation.builder()
+                            .id(id)
+                            .name(name)
+                            .isActive(true)
+                            .build();
+
+                    synopStationCoordinatesRegistry.findCoordinates(id, name).ifPresent(coords -> {
+                        newStation.setLat(coords.lat());
+                        newStation.setLon(coords.lon());
+                    });
+
+                    stationsToSave.add(newStation);
+                    existingMap.put(id, newStation);
+                } else if (station.getLat() == null || station.getLon() == null) {
+                    ImgwSynopStation existingStation = station;
+                    synopStationCoordinatesRegistry.findCoordinates(id, name).ifPresent(coords -> {
+                        existingStation.setLat(coords.lat());
+                        existingStation.setLon(coords.lon());
+                        stationsToSave.add(existingStation);
+                    });
+                }
             }
         }
 
-        if (!newStations.isEmpty()) {
-            synopStationRepo.saveAll(newStations);
-            log.info("Wykryto i zapisano {} nowych stacji Synop (auto-discovery).", newStations.size());
+        if (!stationsToSave.isEmpty()) {
+            synopStationRepo.saveAll(stationsToSave);
+            log.info("Zaktualizowano/zapisano {} stacji Synop (auto-discovery/współrzędne).", stationsToSave.size());
         }
 
         return existingMap;
+    }
+
+    @Transactional
+    public int populateMissingSynopCoordinates() {
+        List<ImgwSynopStation> all = synopStationRepo.findAll();
+        List<ImgwSynopStation> toUpdate = new ArrayList<>();
+        for (ImgwSynopStation station : all) {
+            if (station.getLat() == null || station.getLon() == null) {
+                synopStationCoordinatesRegistry.findCoordinates(station.getId(), station.getName()).ifPresent(coords -> {
+                    station.setLat(coords.lat());
+                    station.setLon(coords.lon());
+                    toUpdate.add(station);
+                });
+            }
+        }
+        if (!toUpdate.isEmpty()) {
+            synopStationRepo.saveAll(toUpdate);
+            log.info("Uzupełniono brakujące współrzędne dla {} stacji Synop.", toUpdate.size());
+        }
+        return toUpdate.size();
     }
 
     @Transactional

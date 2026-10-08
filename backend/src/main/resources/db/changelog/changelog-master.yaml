@@ -8,3 +8,6 @@ databaseChangeLog:
   - include:
       file: changes/003-alter-decimal-to-double.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changes/004-open-meteo-and-synop-coordinates.yaml
+      relativeToChangelogFile: true

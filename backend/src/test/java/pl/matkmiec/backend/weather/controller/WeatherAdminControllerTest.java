@@ -55,6 +55,16 @@ class WeatherAdminControllerTest {
     }
 
     @Test
+    void shouldTriggerOpenMeteoSync() throws Exception {
+        when(weatherSyncService.syncOpenMeteoData()).thenReturn(48);
+
+        mockMvc.perform(post("/admin/weather/sync/open-meteo"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.provider").value("OPEN_METEO"))
+                .andExpect(jsonPath("$.recordsProcessed").value(48));
+    }
+
+    @Test
     void shouldToggleSynopStation() throws Exception {
         when(stationManagementService.toggleSynopStationActive("12345")).thenReturn(false);
 

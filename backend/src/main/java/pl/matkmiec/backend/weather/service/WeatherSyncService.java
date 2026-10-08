@@ -6,15 +6,20 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pl.matkmiec.backend.weather.client.ImgwApiClient;
+import pl.matkmiec.backend.weather.client.OpenMeteoApiClient;
 import pl.matkmiec.backend.weather.config.WeatherProperties;
 import pl.matkmiec.backend.weather.dto.ImgwHydroResponseDto;
 import pl.matkmiec.backend.weather.dto.ImgwMeteoResponseDto;
 import pl.matkmiec.backend.weather.dto.ImgwSynopResponseDto;
+import pl.matkmiec.backend.weather.dto.OpenMeteoResponseDto;
 import pl.matkmiec.backend.weather.mapper.ImgwDataMapper;
+import pl.matkmiec.backend.weather.mapper.OpenMeteoDataMapper;
 import pl.matkmiec.backend.weather.model.*;
 import pl.matkmiec.backend.weather.repository.ImgwHydroDataRepository;
 import pl.matkmiec.backend.weather.repository.ImgwMeteoDataRepository;
 import pl.matkmiec.backend.weather.repository.ImgwSynopDataRepository;
+import pl.matkmiec.backend.weather.repository.ImgwSynopStationRepository;
+import pl.matkmiec.backend.weather.repository.OpenMeteoForecastRepository;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -28,7 +33,9 @@ import java.util.stream.Collectors;
 public class WeatherSyncService {
 
     private final ImgwApiClient imgwApiClient;
+    private final OpenMeteoApiClient openMeteoApiClient;
     private final ImgwDataMapper mapper;
+    private final OpenMeteoDataMapper openMeteoMapper;
     private final StationManagementService stationManagementService;
     private final SyncLogService syncLogService;
     private final WeatherProperties weatherProperties;
@@ -36,6 +43,8 @@ public class WeatherSyncService {
     private final ImgwSynopDataRepository synopDataRepo;
     private final ImgwMeteoDataRepository meteoDataRepo;
     private final ImgwHydroDataRepository hydroDataRepo;
+    private final ImgwSynopStationRepository synopStationRepo;
+    private final OpenMeteoForecastRepository openMeteoForecastRepo;
 
     @Scheduled(cron = "${weather.sync.synop-cron:0 15 * * * *}")
     @Transactional
@@ -274,13 +283,145 @@ public class WeatherSyncService {
         }
     }
 
+    @Scheduled(cron = "${weather.sync.open-meteo-cron:0 0 */6 * * *}")
+    @Transactional
+    public int syncOpenMeteoData() {
+        if (!isSyncEnabled()) {
+            log.info("Synchronizacja pogodowa jest wyłączona w konfiguracji.");
+            return 0;
+        }
+
+        log.info("Rozpoczynam synchronizację danych prognozy Open-Meteo...");
+        WeatherSyncLog logEntry = syncLogService.logStart("OPEN_METEO");
+
+        try {
+            stationManagementService.populateMissingSynopCoordinates();
+
+            List<ImgwSynopStation> activeStations = synopStationRepo.findAllByIsActiveTrue().stream()
+                    .filter(s -> s.getLat() != null && s.getLon() != null)
+                    .toList();
+
+            if (activeStations.isEmpty()) {
+                log.info("Brak aktywnych stacji Synop ze współrzędnymi do synchronizacji Open-Meteo.");
+                syncLogService.logSuccess(logEntry.getId(), 0);
+                return 0;
+            }
+
+            int pastDays = weatherProperties.sync() != null ? weatherProperties.sync().openMeteoPastDays() : 1;
+            int forecastDays = weatherProperties.sync() != null ? weatherProperties.sync().openMeteoForecastDays() : 6;
+            LocalDateTime now = LocalDateTime.now();
+
+            List<OpenMeteoForecast> allCandidates = new ArrayList<>();
+
+            for (ImgwSynopStation station : activeStations) {
+                try {
+                    OpenMeteoResponseDto dto = openMeteoApiClient.fetchForecast(
+                            station.getLat(),
+                            station.getLon(),
+                            pastDays,
+                            forecastDays
+                    );
+                    if (dto != null) {
+                        List<OpenMeteoForecast> stationForecasts = openMeteoMapper.toForecastEntities(dto, station, now);
+                        allCandidates.addAll(stationForecasts);
+                    }
+                } catch (Exception e) {
+                    log.error("Nie udało się pobrać prognozy Open-Meteo dla stacji {} ({}): {}",
+                            station.getId(), station.getName(), e.getMessage());
+                }
+            }
+
+            if (allCandidates.isEmpty()) {
+                log.info("Brak danych prognozy Open-Meteo do przetworzenia.");
+                syncLogService.logSuccess(logEntry.getId(), 0);
+                return 0;
+            }
+
+            LocalDateTime minTime = allCandidates.stream()
+                    .map(OpenMeteoForecast::getForecastTime)
+                    .min(LocalDateTime::compareTo)
+                    .orElse(now.minusDays(1));
+            LocalDateTime maxTime = allCandidates.stream()
+                    .map(OpenMeteoForecast::getForecastTime)
+                    .max(LocalDateTime::compareTo)
+                    .orElse(now.plusDays(6));
+
+            List<String> stationIds = activeStations.stream().map(ImgwSynopStation::getId).toList();
+            List<OpenMeteoForecast> existingRecords = openMeteoForecastRepo
+                    .findAllBySynopStation_IdInAndForecastTimeBetween(stationIds, minTime, maxTime);
+
+            Map<String, OpenMeteoForecast> existingMap = existingRecords.stream()
+                    .collect(Collectors.toMap(
+                            f -> generateUniqueKey(f.getSynopStation().getId(), f.getForecastTime()),
+                            Function.identity(),
+                            (a, b) -> a
+                    ));
+
+            Set<String> processedKeys = new HashSet<>();
+            List<OpenMeteoForecast> toSave = new ArrayList<>();
+
+            for (OpenMeteoForecast candidate : allCandidates) {
+                String key = generateUniqueKey(candidate.getSynopStation().getId(), candidate.getForecastTime());
+                if (!processedKeys.add(key)) {
+                    continue;
+                }
+
+                OpenMeteoForecast existing = existingMap.get(key);
+                if (existing == null) {
+                    toSave.add(candidate);
+                } else if (hasForecastChanged(existing, candidate)) {
+                    existing.setTemperature(candidate.getTemperature());
+                    existing.setWindSpeed(candidate.getWindSpeed());
+                    existing.setWindDirection(candidate.getWindDirection());
+                    existing.setRelativeHumidity(candidate.getRelativeHumidity());
+                    existing.setPrecipitation(candidate.getPrecipitation());
+                    existing.setPressure(candidate.getPressure());
+                    existing.setGeneratedAt(candidate.getGeneratedAt());
+                    toSave.add(existing);
+                }
+            }
+
+            if (!toSave.isEmpty()) {
+                int batchSize = weatherProperties.sync().batchSize();
+                saveInBatches(toSave, openMeteoForecastRepo::saveAll, batchSize);
+                log.info("Pomyślnie zapisano/zaktualizowano {} rekordów Open-Meteo.", toSave.size());
+            } else {
+                log.info("Wszystkie rekordy prognozy Open-Meteo są aktualne i nie wymagają zmian.");
+            }
+
+            syncLogService.logSuccess(logEntry.getId(), toSave.size());
+            return toSave.size();
+
+        } catch (Exception e) {
+            log.error("Błąd podczas synchronizacji Open-Meteo: {}", e.getMessage(), e);
+            syncLogService.logError(logEntry.getId(), e.getMessage());
+            throw e;
+        }
+    }
+
     public Map<String, Integer> syncAll() {
-        log.info("Rozpoczynam pełną synchronizację (Synop, Meteo, Hydro)...");
+        log.info("Rozpoczynam pełną synchronizację (Synop, Meteo, Hydro, Open-Meteo)...");
         Map<String, Integer> results = new LinkedHashMap<>();
         results.put("synop", syncSynopData());
         results.put("meteo", syncMeteoData());
         results.put("hydro", syncHydroData());
+        results.put("openMeteo", syncOpenMeteoData());
         return results;
+    }
+
+    private boolean hasForecastChanged(OpenMeteoForecast existing, OpenMeteoForecast candidate) {
+        return !doubleEquals(existing.getTemperature(), candidate.getTemperature())
+                || !doubleEquals(existing.getWindSpeed(), candidate.getWindSpeed())
+                || !Objects.equals(existing.getWindDirection(), candidate.getWindDirection())
+                || !doubleEquals(existing.getRelativeHumidity(), candidate.getRelativeHumidity())
+                || !doubleEquals(existing.getPrecipitation(), candidate.getPrecipitation())
+                || !doubleEquals(existing.getPressure(), candidate.getPressure());
+    }
+
+    private boolean doubleEquals(Double a, Double b) {
+        if (a == null && b == null) return true;
+        if (a == null || b == null) return false;
+        return Math.abs(a - b) < 0.0001;
     }
 
     private boolean isSyncEnabled() {

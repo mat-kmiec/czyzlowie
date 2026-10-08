@@ -45,8 +45,11 @@ class StationManagementServiceTest {
         assertThat(discovered).hasSize(2);
         assertThat(synopStationRepo.findById("12295")).isPresent();
         assertThat(synopStationRepo.findById("12295").get().getIsActive()).isTrue();
+        assertThat(synopStationRepo.findById("12295").get().getLat()).isNotNull();
+        assertThat(synopStationRepo.findById("12295").get().getLon()).isNotNull();
         assertThat(synopStationRepo.findById("12600")).isPresent();
         assertThat(synopStationRepo.findById("12600").get().getName()).isEqualTo("Bielsko Biała");
+        assertThat(synopStationRepo.findById("12600").get().getLat()).isNotNull();
     }
 
     @Test

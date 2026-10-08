@@ -1,0 +1,23 @@
+databaseChangeLog:
+  - changeSet:
+      id: 007-add-open-meteo-constraints-and-indexes
+      author: matkmiec
+      changes:
+        - addUniqueConstraint:
+            tableName: open_meteo_forecast
+            columnNames: synop_station_id, forecast_time
+            constraintName: uk_open_meteo_station_time
+        - createIndex:
+            tableName: open_meteo_forecast
+            indexName: idx_open_meteo_forecast_time
+            columns:
+              - column:
+                  name: forecast_time
+        - createIndex:
+            tableName: open_meteo_forecast
+            indexName: idx_open_meteo_station_time
+            columns:
+              - column:
+                  name: synop_station_id
+              - column:
+                  name: forecast_time

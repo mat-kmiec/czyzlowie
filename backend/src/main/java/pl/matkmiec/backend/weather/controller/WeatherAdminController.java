@@ -47,6 +47,13 @@ public class WeatherAdminController {
         return ResponseEntity.ok(Map.of("provider", "IMGW_HYDRO", "recordsProcessed", records));
     }
 
+    @PostMapping("/sync/open-meteo")
+    @Operation(summary = "Manually trigger Open-Meteo forecast synchronization")
+    public ResponseEntity<Map<String, Object>> triggerOpenMeteoSync() {
+        int records = weatherSyncService.syncOpenMeteoData();
+        return ResponseEntity.ok(Map.of("provider", "OPEN_METEO", "recordsProcessed", records));
+    }
+
     @PostMapping("/sync/all")
     @Operation(summary = "Manually trigger synchronization for all weather providers")
     public ResponseEntity<Map<String, Object>> triggerAllSync() {

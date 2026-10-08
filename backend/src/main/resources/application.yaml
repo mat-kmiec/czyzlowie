@@ -59,5 +59,6 @@ weather:
     synop-cron: "0 15 * * * *"
     meteo-cron: "0 */10 * * * *"
     hydro-cron: "0 */10 * * * *"
+    open-meteo-cron: "0 0 */6 * * *"
     batch-size: 50
     deduplication-window-hours: 48
