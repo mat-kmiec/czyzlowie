@@ -1,6 +1,9 @@
 package pl.matkmiec.backend.weather.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import pl.matkmiec.backend.weather.model.OpenMeteoForecast;
 
@@ -35,4 +38,8 @@ public interface OpenMeteoForecastRepository extends JpaRepository<OpenMeteoFore
     Optional<OpenMeteoForecast> findBySynopStation_IdAndForecastTime(
             String stationId, LocalDateTime forecastTime
     );
+
+    @Modifying(clearAutomatically = true)
+    @Query("DELETE FROM OpenMeteoForecast f WHERE f.forecastTime < :cutoff")
+    int deleteByForecastTimeBefore(@Param("cutoff") LocalDateTime cutoff);
 }

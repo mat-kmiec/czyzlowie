@@ -11,9 +11,11 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import pl.matkmiec.backend.weather.model.ImgwSynopStation;
 import pl.matkmiec.backend.weather.service.StationManagementService;
 import pl.matkmiec.backend.weather.service.SyncLogService;
+import pl.matkmiec.backend.weather.service.WeatherCleanupService;
 import pl.matkmiec.backend.weather.service.WeatherSyncService;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -35,6 +37,9 @@ class WeatherAdminControllerTest {
 
     @Mock
     private SyncLogService syncLogService;
+
+    @Mock
+    private WeatherCleanupService weatherCleanupService;
 
     @InjectMocks
     private WeatherAdminController weatherAdminController;
@@ -82,5 +87,33 @@ class WeatherAdminControllerTest {
         mockMvc.perform(get("/admin/weather/stations/synop"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value("123"));
+    }
+
+    @Test
+    void shouldTriggerCleanup() throws Exception {
+        when(weatherCleanupService.cleanupOldData()).thenReturn(Map.of(
+                "status", "SUCCESS",
+                "totalDeleted", 15
+        ));
+
+        mockMvc.perform(post("/admin/weather/cleanup"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("SUCCESS"))
+                .andExpect(jsonPath("$.totalDeleted").value(15));
+    }
+
+    @Test
+    void shouldTriggerCleanupWithCustomDays() throws Exception {
+        when(weatherCleanupService.cleanupDataOlderThan(10)).thenReturn(Map.of(
+                "status", "SUCCESS",
+                "retentionDays", 10,
+                "totalDeleted", 5
+        ));
+
+        mockMvc.perform(post("/admin/weather/cleanup").param("retentionDays", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("SUCCESS"))
+                .andExpect(jsonPath("$.retentionDays").value(10))
+                .andExpect(jsonPath("$.totalDeleted").value(5));
     }
 }

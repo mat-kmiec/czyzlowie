@@ -62,3 +62,8 @@ weather:
     open-meteo-cron: "0 0 */6 * * *"
     batch-size: 50
     deduplication-window-hours: 48
+  cleanup:
+    enabled: true
+    cron: "0 30 1 * * *"
+    zone: "Europe/Warsaw"
+    retention-days: 5

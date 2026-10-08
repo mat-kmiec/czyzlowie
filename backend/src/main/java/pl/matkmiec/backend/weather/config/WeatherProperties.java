@@ -6,7 +6,8 @@ import org.springframework.boot.context.properties.bind.DefaultValue;
 @ConfigurationProperties(prefix = "weather")
 public record WeatherProperties(
         @DefaultValue Api api,
-        @DefaultValue Sync sync
+        @DefaultValue Sync sync,
+        @DefaultValue Cleanup cleanup
 ) {
     public record Api(
             @DefaultValue("https://danepubliczne.imgw.pl/api") String imgwBaseUrl,
@@ -23,6 +24,13 @@ public record WeatherProperties(
             @DefaultValue("6") int openMeteoForecastDays,
             @DefaultValue("50") int batchSize,
             @DefaultValue("48") int deduplicationWindowHours
+    ) {}
+
+    public record Cleanup(
+            @DefaultValue("true") boolean enabled,
+            @DefaultValue("0 30 1 * * *") String cron,
+            @DefaultValue("Europe/Warsaw") String zone,
+            @DefaultValue("5") int retentionDays
     ) {}
 
     public String imgwBaseUrl() {

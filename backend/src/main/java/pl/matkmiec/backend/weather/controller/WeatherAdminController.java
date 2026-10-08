@@ -11,6 +11,7 @@ import pl.matkmiec.backend.weather.model.ImgwSynopStation;
 import pl.matkmiec.backend.weather.model.WeatherSyncLog;
 import pl.matkmiec.backend.weather.service.StationManagementService;
 import pl.matkmiec.backend.weather.service.SyncLogService;
+import pl.matkmiec.backend.weather.service.WeatherCleanupService;
 import pl.matkmiec.backend.weather.service.WeatherSyncService;
 
 import java.util.List;
@@ -25,6 +26,7 @@ public class WeatherAdminController {
     private final WeatherSyncService weatherSyncService;
     private final StationManagementService stationManagementService;
     private final SyncLogService syncLogService;
+    private final WeatherCleanupService weatherCleanupService;
 
     @PostMapping("/sync/synop")
     @Operation(summary = "Manually trigger IMGW Synop synchronization")
@@ -59,6 +61,17 @@ public class WeatherAdminController {
     public ResponseEntity<Map<String, Object>> triggerAllSync() {
         Map<String, Integer> results = weatherSyncService.syncAll();
         return ResponseEntity.ok(Map.of("status", "SUCCESS", "results", results));
+    }
+
+    @PostMapping("/cleanup")
+    @Operation(summary = "Manually trigger weather data cleanup")
+    public ResponseEntity<Map<String, Object>> triggerCleanup(
+            @RequestParam(required = false) Integer retentionDays
+    ) {
+        Map<String, Object> result = retentionDays != null
+                ? weatherCleanupService.cleanupDataOlderThan(retentionDays)
+                : weatherCleanupService.cleanupOldData();
+        return ResponseEntity.ok(result);
     }
 
     @GetMapping("/sync/logs")
