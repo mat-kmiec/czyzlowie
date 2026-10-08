@@ -2,11 +2,13 @@ package pl.matkmiec.backend.weather.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pl.matkmiec.backend.weather.client.ImgwApiClient;
 import pl.matkmiec.backend.weather.client.OpenMeteoApiClient;
+import pl.matkmiec.backend.weather.config.CacheConfig;
 import pl.matkmiec.backend.weather.config.WeatherProperties;
 import pl.matkmiec.backend.weather.dto.ImgwHydroResponseDto;
 import pl.matkmiec.backend.weather.dto.ImgwMeteoResponseDto;
@@ -23,6 +25,8 @@ import pl.matkmiec.backend.weather.repository.OpenMeteoForecastRepository;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -48,6 +52,7 @@ public class WeatherSyncService {
 
     @Scheduled(cron = "${weather.sync.synop-cron:0 15 * * * *}")
     @Transactional
+    @CacheEvict(value = {CacheConfig.CACHE_SYNOP_STATIONS, CacheConfig.CACHE_CURRENT_WEATHER, CacheConfig.CACHE_NEAREST_STATION}, allEntries = true)
     public int syncSynopData() {
         if (!isSyncEnabled()) {
             log.info("Synchronizacja pogodowa jest wyłączona w konfiguracji.");
@@ -127,6 +132,7 @@ public class WeatherSyncService {
 
     @Scheduled(cron = "${weather.sync.meteo-cron:0 */10 * * * *}")
     @Transactional
+    @CacheEvict(value = {CacheConfig.CACHE_METEO_STATIONS, CacheConfig.CACHE_CURRENT_WEATHER, CacheConfig.CACHE_NEAREST_STATION}, allEntries = true)
     public int syncMeteoData() {
         if (!isSyncEnabled()) {
             log.info("Synchronizacja pogodowa jest wyłączona w konfiguracji.");
@@ -206,6 +212,7 @@ public class WeatherSyncService {
 
     @Scheduled(cron = "${weather.sync.hydro-cron:0 */10 * * * *}")
     @Transactional
+    @CacheEvict(value = {CacheConfig.CACHE_HYDRO_STATIONS, CacheConfig.CACHE_CURRENT_WEATHER, CacheConfig.CACHE_NEAREST_STATION}, allEntries = true)
     public int syncHydroData() {
         if (!isSyncEnabled()) {
             log.info("Synchronizacja pogodowa jest wyłączona w konfiguracji.");
@@ -285,6 +292,7 @@ public class WeatherSyncService {
 
     @Scheduled(cron = "${weather.sync.open-meteo-cron:0 0 */6 * * *}")
     @Transactional
+    @CacheEvict(value = {CacheConfig.CACHE_CURRENT_WEATHER, CacheConfig.CACHE_FORECAST, CacheConfig.CACHE_NEAREST_STATION}, allEntries = true)
     public int syncOpenMeteoData() {
         if (!isSyncEnabled()) {
             log.info("Synchronizacja pogodowa jest wyłączona w konfiguracji.");
@@ -311,25 +319,33 @@ public class WeatherSyncService {
             int forecastDays = weatherProperties.sync() != null ? weatherProperties.sync().openMeteoForecastDays() : 6;
             LocalDateTime now = LocalDateTime.now();
 
-            List<OpenMeteoForecast> allCandidates = new ArrayList<>();
-
-            for (ImgwSynopStation station : activeStations) {
-                try {
-                    OpenMeteoResponseDto dto = openMeteoApiClient.fetchForecast(
-                            station.getLat(),
-                            station.getLon(),
-                            pastDays,
-                            forecastDays
-                    );
-                    if (dto != null) {
-                        List<OpenMeteoForecast> stationForecasts = openMeteoMapper.toForecastEntities(dto, station, now);
-                        allCandidates.addAll(stationForecasts);
-                    }
-                } catch (Exception e) {
-                    log.error("Nie udało się pobrać prognozy Open-Meteo dla stacji {} ({}): {}",
-                            station.getId(), station.getName(), e.getMessage());
-                }
+            List<CompletableFuture<List<OpenMeteoForecast>>> futures;
+            try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+                futures = activeStations.stream()
+                        .map(station -> CompletableFuture.supplyAsync(() -> {
+                            try {
+                                OpenMeteoResponseDto dto = openMeteoApiClient.fetchForecast(
+                                        station.getLat(),
+                                        station.getLon(),
+                                        pastDays,
+                                        forecastDays
+                                );
+                                if (dto != null) {
+                                    return openMeteoMapper.toForecastEntities(dto, station, now);
+                                }
+                            } catch (Exception e) {
+                                log.error("Nie udało się pobrać prognozy Open-Meteo dla stacji {} ({}): {}",
+                                        station.getId(), station.getName(), e.getMessage());
+                            }
+                            return Collections.<OpenMeteoForecast>emptyList();
+                        }, executor))
+                        .toList();
             }
+
+            List<OpenMeteoForecast> allCandidates = futures.stream()
+                    .map(CompletableFuture::join)
+                    .flatMap(List::stream)
+                    .toList();
 
             if (allCandidates.isEmpty()) {
                 log.info("Brak danych prognozy Open-Meteo do przetworzenia.");

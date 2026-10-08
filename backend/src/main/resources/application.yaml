@@ -4,6 +4,13 @@ server:
     context-path: /api
 
 spring:
+  data:
+    web:
+      pageable:
+        serialization-mode: via-dto
+  threads:
+    virtual:
+      enabled: true
   application:
     name: czyzlowie-backend
   datasource:

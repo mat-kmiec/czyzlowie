@@ -1,14 +1,24 @@
 package pl.matkmiec.backend.weather.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableHandlerMethodArgumentResolver;
+import org.springframework.data.web.config.EnableSpringDataWebSupport;
+import org.springframework.data.web.config.SpringDataJacksonConfiguration;
+import org.springframework.data.web.config.SpringDataWebSettings;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import pl.matkmiec.backend.weather.model.ImgwSynopStation;
+import pl.matkmiec.backend.weather.model.WeatherSyncLog;
 import pl.matkmiec.backend.weather.service.StationManagementService;
 import pl.matkmiec.backend.weather.service.SyncLogService;
 import pl.matkmiec.backend.weather.service.WeatherCleanupService;
@@ -17,6 +27,7 @@ import pl.matkmiec.backend.weather.service.WeatherSyncService;
 import java.util.List;
 import java.util.Map;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -46,7 +57,16 @@ class WeatherAdminControllerTest {
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(weatherAdminController).build();
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
+        objectMapper.registerModule(new SpringDataJacksonConfiguration.PageModule(new SpringDataWebSettings(EnableSpringDataWebSupport.PageSerializationMode.VIA_DTO)));
+
+        MappingJackson2HttpMessageConverter converter = new MappingJackson2HttpMessageConverter(objectMapper);
+
+        mockMvc = MockMvcBuilders.standaloneSetup(weatherAdminController)
+                .setCustomArgumentResolvers(new PageableHandlerMethodArgumentResolver())
+                .setMessageConverters(converter)
+                .build();
     }
 
     @Test
@@ -87,6 +107,17 @@ class WeatherAdminControllerTest {
         mockMvc.perform(get("/admin/weather/stations/synop"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value("123"));
+    }
+
+    @Test
+    void shouldGetSyncLogsWithPagination() throws Exception {
+        WeatherSyncLog log = WeatherSyncLog.builder().id(123L).providerName("IMGW_SYNOP").status("SUCCESS").build();
+        when(syncLogService.getLogs(any(Pageable.class))).thenReturn(new PageImpl<>(List.of(log)));
+
+        mockMvc.perform(get("/admin/weather/sync/logs").param("page", "0").param("size", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].id").value(123))
+                .andExpect(jsonPath("$.content[0].providerName").value("IMGW_SYNOP"));
     }
 
     @Test

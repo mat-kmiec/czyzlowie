@@ -3,8 +3,15 @@ package pl.matkmiec.backend.weather.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import pl.matkmiec.backend.weather.config.CacheConfig;
 import pl.matkmiec.backend.weather.model.ImgwHydroStation;
 import pl.matkmiec.backend.weather.model.ImgwMeteoStation;
 import pl.matkmiec.backend.weather.model.ImgwSynopStation;
@@ -75,9 +82,11 @@ public class WeatherAdminController {
     }
 
     @GetMapping("/sync/logs")
-    @Operation(summary = "Fetch synchronization logs")
-    public ResponseEntity<List<WeatherSyncLog>> getSyncLogs() {
-        return ResponseEntity.ok(syncLogService.getRecentLogs());
+    @Operation(summary = "Fetch synchronization logs with pagination")
+    public ResponseEntity<Page<WeatherSyncLog>> getSyncLogs(
+            @ParameterObject @PageableDefault(sort = "startedAt", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
+        return ResponseEntity.ok(syncLogService.getLogs(pageable));
     }
 
     @GetMapping("/stations/synop")
@@ -100,6 +109,7 @@ public class WeatherAdminController {
 
     @PatchMapping("/stations/synop/{id}/toggle-active")
     @Operation(summary = "Toggle active status for a Synop station")
+    @CacheEvict(value = {CacheConfig.CACHE_SYNOP_STATIONS, CacheConfig.CACHE_CURRENT_WEATHER, CacheConfig.CACHE_NEAREST_STATION}, allEntries = true)
     public ResponseEntity<Map<String, Object>> toggleSynopStation(@PathVariable String id) {
         boolean active = stationManagementService.toggleSynopStationActive(id);
         return ResponseEntity.ok(Map.of("stationId", id, "isActive", active));
@@ -107,6 +117,7 @@ public class WeatherAdminController {
 
     @PatchMapping("/stations/meteo/{id}/toggle-active")
     @Operation(summary = "Toggle active status for a Meteo station")
+    @CacheEvict(value = {CacheConfig.CACHE_METEO_STATIONS, CacheConfig.CACHE_NEAREST_STATION}, allEntries = true)
     public ResponseEntity<Map<String, Object>> toggleMeteoStation(@PathVariable String id) {
         boolean active = stationManagementService.toggleMeteoStationActive(id);
         return ResponseEntity.ok(Map.of("stationId", id, "isActive", active));
@@ -114,6 +125,7 @@ public class WeatherAdminController {
 
     @PatchMapping("/stations/hydro/{id}/toggle-active")
     @Operation(summary = "Toggle active status for a Hydro station")
+    @CacheEvict(value = {CacheConfig.CACHE_HYDRO_STATIONS, CacheConfig.CACHE_NEAREST_STATION}, allEntries = true)
     public ResponseEntity<Map<String, Object>> toggleHydroStation(@PathVariable String id) {
         boolean active = stationManagementService.toggleHydroStationActive(id);
         return ResponseEntity.ok(Map.of("stationId", id, "isActive", active));
