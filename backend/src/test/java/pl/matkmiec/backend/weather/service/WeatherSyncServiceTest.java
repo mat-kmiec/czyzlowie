@@ -172,7 +172,7 @@ class WeatherSyncServiceTest {
         synopStationRepo.save(station);
 
         OpenMeteoResponseDto.HourlyUnitsDto units = new OpenMeteoResponseDto.HourlyUnitsDto(
-                "iso8601", "°C", "%", "mm", "hPa", "hPa", "m/s", "°"
+                "iso8601", "°C", "%", "mm", "hPa", "hPa", "m/s", "°", "", "wmo code", "m/s", "%"
         );
         OpenMeteoResponseDto.HourlyDataDto hourly = new OpenMeteoResponseDto.HourlyDataDto(
                 List.of("2026-10-08T12:00", "2026-10-08T13:00"),
@@ -182,7 +182,11 @@ class WeatherSyncServiceTest {
                 List.of(1010.0, 1009.0),
                 List.of(1015.0, 1014.0),
                 List.of(3.0, 4.0),
-                List.of(180, 190)
+                List.of(180, 190),
+                List.of(3.5, 4.0),
+                List.of(1, 2),
+                List.of(6.0, 7.5),
+                List.of(20, 30)
         );
         OpenMeteoResponseDto dto = new OpenMeteoResponseDto(
                 52.23, 21.01, 0.5, 7200, "Europe/Warsaw", "CEST", 105.0, units, hourly
@@ -214,7 +218,7 @@ class WeatherSyncServiceTest {
         synopStationRepo.save(station);
 
         OpenMeteoResponseDto.HourlyUnitsDto units = new OpenMeteoResponseDto.HourlyUnitsDto(
-                "iso8601", "°C", "%", "mm", "hPa", "hPa", "m/s", "°"
+                "iso8601", "°C", "%", "mm", "hPa", "hPa", "m/s", "°", "", "wmo code", "m/s", "%"
         );
         OpenMeteoResponseDto.HourlyDataDto initialHourly = new OpenMeteoResponseDto.HourlyDataDto(
                 List.of("2026-10-08T12:00"),
@@ -224,7 +228,11 @@ class WeatherSyncServiceTest {
                 List.of(1010.0),
                 List.of(1015.0),
                 List.of(3.0),
-                List.of(180)
+                List.of(180),
+                List.of(3.5),
+                List.of(1),
+                List.of(6.0),
+                List.of(20)
         );
         OpenMeteoResponseDto initialDto = new OpenMeteoResponseDto(
                 53.13, 23.16, 0.5, 7200, "Europe/Warsaw", "CEST", 150.0, units, initialHourly
@@ -247,7 +255,11 @@ class WeatherSyncServiceTest {
                 List.of(1008.0),
                 List.of(1012.0),
                 List.of(5.0),
-                List.of(200)
+                List.of(200),
+                List.of(4.0),
+                List.of(3),
+                List.of(8.0),
+                List.of(50)
         );
         OpenMeteoResponseDto updatedDto = new OpenMeteoResponseDto(
                 53.13, 23.16, 0.5, 7200, "Europe/Warsaw", "CEST", 150.0, units, updatedHourly

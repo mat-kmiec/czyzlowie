@@ -42,6 +42,10 @@ public class OpenMeteoDataMapper {
             Double pressure = resolvePressure(hourly, i);
             Double windSpeed = getOrNull(hourly.windSpeed10m(), i);
             Integer windDir = getOrNull(hourly.windDirection10m(), i);
+            Double uvIndex = getOrNull(hourly.uvIndex(), i);
+            Integer weatherCode = getOrNull(hourly.weatherCode(), i);
+            Double windGusts = getOrNull(hourly.windGusts10m(), i);
+            Integer cloudCover = getOrNull(hourly.cloudCover(), i);
 
             OpenMeteoForecast forecast = OpenMeteoForecast.builder()
                     .synopStation(station)
@@ -53,6 +57,10 @@ public class OpenMeteoDataMapper {
                     .pressure(pressure)
                     .windSpeed(windSpeed)
                     .windDirection(windDir)
+                    .uvIndex(uvIndex)
+                    .weatherCode(weatherCode)
+                    .windGusts(windGusts)
+                    .cloudCover(cloudCover)
                     .build();
 
             forecasts.add(forecast);

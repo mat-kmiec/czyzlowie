@@ -63,10 +63,17 @@ weather:
     open-meteo-base-url: https://api.open-meteo.com/v1
   sync:
     enabled: true
+    # Konfiguracja częstotliwości synchronizacji danych pogodowych (harmonogram cron):
+    # - IMGW Synop: dane synoptyczne aktualizowane co godzinę
     synop-cron: "0 15 * * * *"
+    # - IMGW Meteo: dane ze stacji meteorologicznych aktualizowane co 10 minut
     meteo-cron: "0 */10 * * * *"
+    # - IMGW Hydro: dane hydrologiczne (stany rzek, temperatury) aktualizowane co 10 minut
     hydro-cron: "0 */10 * * * *"
+    # - Open-Meteo: numeryczne prognozy pogody dla stacji synoptycznych (aktualizacja co 6h)
     open-meteo-cron: "0 0 */6 * * *"
+    open-meteo-past-days: 1
+    open-meteo-forecast-days: 6
     batch-size: 50
     deduplication-window-hours: 48
   cleanup:

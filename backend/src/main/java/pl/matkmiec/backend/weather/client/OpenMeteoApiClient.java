@@ -31,7 +31,7 @@ public class OpenMeteoApiClient {
                             .path("/forecast")
                             .queryParam("latitude", latitude)
                             .queryParam("longitude", longitude)
-                            .queryParam("hourly", "temperature_2m,relative_humidity_2m,precipitation,surface_pressure,pressure_msl,wind_speed_10m,wind_direction_10m")
+                            .queryParam("hourly", "temperature_2m,relative_humidity_2m,precipitation,surface_pressure,pressure_msl,wind_speed_10m,wind_direction_10m,uv_index,weather_code,wind_gusts_10m,cloud_cover")
                             .queryParam("wind_speed_unit", "ms")
                             .queryParam("timezone", "Europe/Warsaw")
                             .queryParam("past_days", pastDays)

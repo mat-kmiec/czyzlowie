@@ -11,3 +11,6 @@ databaseChangeLog:
   - include:
       file: changes/004-open-meteo-and-synop-coordinates.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changes/005-add-open-meteo-extended-fields.yaml
+      relativeToChangelogFile: true

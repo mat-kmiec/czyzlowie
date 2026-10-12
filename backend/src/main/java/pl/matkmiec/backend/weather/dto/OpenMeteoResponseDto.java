@@ -22,7 +22,11 @@ public record OpenMeteoResponseDto(
             @JsonProperty("surface_pressure") String surfacePressure,
             @JsonProperty("pressure_msl") String pressureMsl,
             @JsonProperty("wind_speed_10m") String windSpeed10m,
-            @JsonProperty("wind_direction_10m") String windDirection10m
+            @JsonProperty("wind_direction_10m") String windDirection10m,
+            @JsonProperty("uv_index") String uvIndex,
+            @JsonProperty("weather_code") String weatherCode,
+            @JsonProperty("wind_gusts_10m") String windGusts10m,
+            @JsonProperty("cloud_cover") String cloudCover
     ) {}
 
     public record HourlyDataDto(
@@ -33,6 +37,10 @@ public record OpenMeteoResponseDto(
             @JsonProperty("surface_pressure") List<Double> surfacePressure,
             @JsonProperty("pressure_msl") List<Double> pressureMsl,
             @JsonProperty("wind_speed_10m") List<Double> windSpeed10m,
-            @JsonProperty("wind_direction_10m") List<Integer> windDirection10m
+            @JsonProperty("wind_direction_10m") List<Integer> windDirection10m,
+            @JsonProperty("uv_index") List<Double> uvIndex,
+            @JsonProperty("weather_code") List<Integer> weatherCode,
+            @JsonProperty("wind_gusts_10m") List<Double> windGusts10m,
+            @JsonProperty("cloud_cover") List<Integer> cloudCover
     ) {}
 }

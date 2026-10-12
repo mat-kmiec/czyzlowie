@@ -44,4 +44,16 @@ public class OpenMeteoForecast {
 
     @Column(name = "pressure")
     private Double pressure;
+
+    @Column(name = "uv_index")
+    private Double uvIndex;
+
+    @Column(name = "weather_code")
+    private Integer weatherCode;
+
+    @Column(name = "wind_gusts")
+    private Double windGusts;
+
+    @Column(name = "cloud_cover")
+    private Integer cloudCover;
 }

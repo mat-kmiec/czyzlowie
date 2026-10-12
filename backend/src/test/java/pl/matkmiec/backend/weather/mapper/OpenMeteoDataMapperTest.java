@@ -17,7 +17,7 @@ class OpenMeteoDataMapperTest {
     @Test
     void shouldMapOpenMeteoResponseToEntities() {
         OpenMeteoResponseDto.HourlyUnitsDto units = new OpenMeteoResponseDto.HourlyUnitsDto(
-                "iso8601", "°C", "%", "mm", "hPa", "hPa", "m/s", "°"
+                "iso8601", "°C", "%", "mm", "hPa", "hPa", "m/s", "°", "", "wmo code", "m/s", "%"
         );
         OpenMeteoResponseDto.HourlyDataDto hourly = new OpenMeteoResponseDto.HourlyDataDto(
                 List.of("2026-10-07T12:00", "2026-10-07T13:00"),
@@ -27,7 +27,11 @@ class OpenMeteoDataMapperTest {
                 List.of(1005.0, 1004.0),
                 List.of(1015.0, 1014.0),
                 List.of(3.5, 4.0),
-                List.of(180, 200)
+                List.of(180, 200),
+                List.of(4.2, 3.8),
+                List.of(2, 61),
+                List.of(7.5, 8.2),
+                List.of(40, 85)
         );
         OpenMeteoResponseDto dto = new OpenMeteoResponseDto(
                 52.23, 21.01, 0.5, 7200, "Europe/Warsaw", "CEST", 105.0, units, hourly
@@ -57,12 +61,20 @@ class OpenMeteoDataMapperTest {
         assertThat(first.getPressure()).isEqualTo(1015.0); // should pick pressureMsl
         assertThat(first.getWindSpeed()).isEqualTo(3.5);
         assertThat(first.getWindDirection()).isEqualTo(180);
+        assertThat(first.getUvIndex()).isEqualTo(4.2);
+        assertThat(first.getWeatherCode()).isEqualTo(2);
+        assertThat(first.getWindGusts()).isEqualTo(7.5);
+        assertThat(first.getCloudCover()).isEqualTo(40);
 
         OpenMeteoForecast second = forecasts.get(1);
         assertThat(second.getForecastTime()).isEqualTo(LocalDateTime.of(2026, 10, 7, 13, 0));
         assertThat(second.getTemperature()).isEqualTo(16.5);
         assertThat(second.getPrecipitation()).isEqualTo(0.5);
         assertThat(second.getPressure()).isEqualTo(1014.0);
+        assertThat(second.getUvIndex()).isEqualTo(3.8);
+        assertThat(second.getWeatherCode()).isEqualTo(61);
+        assertThat(second.getWindGusts()).isEqualTo(8.2);
+        assertThat(second.getCloudCover()).isEqualTo(85);
     }
 
     @Test
