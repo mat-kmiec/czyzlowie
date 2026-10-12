@@ -38,3 +38,23 @@ weather:
     cron: "0 30 1 * * *"
     zone: "Europe/Warsaw"
     retention-days: 5
+
+airquality:
+  api:
+    gios-base-url: https://api.gios.gov.pl/pjp-api/v1/rest
+    ios-base-url: https://api.prognozy.ios.edu.pl/v1
+  sync:
+    enabled: true
+    stations-cron: "0 0 3 * * *"
+    sensors-cron: "0 5 3 * * *"
+    measurements-cron: "0 10 * * * *"
+    index-cron: "0 12 * * * *"
+    forecast-cron: "0 0 */6 * * *"
+    batch-size: 50
+    parallel-threads: 16
+    deduplication-window-hours: 48
+  cleanup:
+    enabled: true
+    cron: "0 45 1 * * *"
+    zone: "Europe/Warsaw"
+    retention-days: 7

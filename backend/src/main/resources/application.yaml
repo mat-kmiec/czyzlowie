@@ -81,3 +81,29 @@ weather:
     cron: "0 30 1 * * *"
     zone: "Europe/Warsaw"
     retention-days: 5
+
+airquality:
+  api:
+    gios-base-url: https://api.gios.gov.pl/pjp-api/v1/rest
+    ios-base-url: https://api.prognozy.ios.edu.pl/v1
+  sync:
+    enabled: true
+    # Konfiguracja częstotliwości synchronizacji danych jakości powietrza (harmonogram cron):
+    # - GIOŚ Stacje: codzienna aktualizacja metadanych stacji
+    stations-cron: "0 0 3 * * *"
+    # - GIOŚ Stanowiska (czujniki): codzienna aktualizacja stanowisk pomiarowych
+    sensors-cron: "0 5 3 * * *"
+    # - GIOŚ Pomiary: bieżące dane pomiarowe z czujników (aktualizacja co godzinę o :10)
+    measurements-cron: "0 10 * * * *"
+    # - GIOŚ Indeks: aktualne wskazania indeksu jakości powietrza (aktualizacja co godzinę o :12)
+    index-cron: "0 12 * * * *"
+    # - IOŚ Prognozy: numeryczne prognozy jakości powietrza IOŚ-PIB (aktualizacja co 6h)
+    forecast-cron: "0 0 */6 * * *"
+    batch-size: 50
+    parallel-threads: 16
+    deduplication-window-hours: 48
+  cleanup:
+    enabled: true
+    cron: "0 45 1 * * *"
+    zone: "Europe/Warsaw"
+    retention-days: 7

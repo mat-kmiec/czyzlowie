@@ -20,6 +20,14 @@ public class CacheConfig {
     public static final String CACHE_NEAREST_STATION = "nearestStation";
     public static final String CACHE_FORECAST = "forecast";
 
+    public static final String CACHE_AIR_QUALITY_MAP = "airQualityMap";
+    public static final String CACHE_AIR_QUALITY_STATIONS = "airQualityStations";
+    public static final String CACHE_AIR_QUALITY_RANKINGS = "airQualityRankings";
+    public static final String CACHE_AIR_QUALITY_STATION_DETAILS = "airQualityStationDetails";
+    public static final String CACHE_AIR_QUALITY_NEAREST = "airQualityNearest";
+    public static final String CACHE_AIR_QUALITY_FORECAST = "airQualityForecast";
+    public static final String CACHE_AIR_QUALITY_OVERVIEW = "airQualityOverview";
+
     @Bean
     public CacheManager cacheManager() {
         CaffeineCacheManager cacheManager = new CaffeineCacheManager(
@@ -28,7 +36,14 @@ public class CacheConfig {
                 CACHE_HYDRO_STATIONS,
                 CACHE_CURRENT_WEATHER,
                 CACHE_NEAREST_STATION,
-                CACHE_FORECAST
+                CACHE_FORECAST,
+                CACHE_AIR_QUALITY_MAP,
+                CACHE_AIR_QUALITY_STATIONS,
+                CACHE_AIR_QUALITY_RANKINGS,
+                CACHE_AIR_QUALITY_STATION_DETAILS,
+                CACHE_AIR_QUALITY_NEAREST,
+                CACHE_AIR_QUALITY_FORECAST,
+                CACHE_AIR_QUALITY_OVERVIEW
         );
         cacheManager.setCaffeine(Caffeine.newBuilder()
                 .expireAfterWrite(10, TimeUnit.MINUTES)
