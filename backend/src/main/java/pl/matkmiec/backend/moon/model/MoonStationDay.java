@@ -3,7 +3,7 @@ package pl.matkmiec.backend.moon.model;
 import jakarta.persistence.*;
 import lombok.*;
 import pl.matkmiec.backend.moon.dto.SolunarActivityLevel;
-import pl.matkmiec.backend.weather.model.ImgwMeteoStation;
+import pl.matkmiec.backend.weather.model.ImgwSynopStation;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -25,7 +25,7 @@ public class MoonStationDay {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "station_id", nullable = false)
-    private ImgwMeteoStation station;
+    private ImgwSynopStation station;
 
     @Column(name = "calculation_date", nullable = false)
     private LocalDate calculationDate;

@@ -20,7 +20,7 @@ public class MoonAdminController {
 
     @PostMapping("/generate-year")
     @Operation(summary = "Calculate and persist full astronomical and solunar data for an entire year",
-            description = "Fills database with precomputed data: first nationwide general records (phases, age, distance), then per-meteo station precise sun/moon times and solunar feeding periods.")
+            description = "Fills database with precomputed data: first nationwide general records (phases, age, distance), then per-synop station precise sun/moon times and solunar feeding periods.")
     public ResponseEntity<MoonGenerationResultDto> generateYearlyMoonData(
             @Parameter(description = "Calculation year (e.g. 2027)") @RequestParam(defaultValue = "2027") int year) {
         return ResponseEntity.ok(moonService.generateYearlyData(year));

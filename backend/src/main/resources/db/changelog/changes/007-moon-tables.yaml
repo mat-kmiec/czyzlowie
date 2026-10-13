@@ -79,7 +79,7 @@ databaseChangeLog:
                   constraints:
                     nullable: false
                     foreignKeyName: fk_moon_station_day_station
-                    references: imgw_meteo_station(id)
+                    references: imgw_synop_station(id)
               - column:
                   name: calculation_date
                   type: DATE

@@ -27,7 +27,12 @@ import java.time.LocalTime;
 import java.time.YearMonth;
 import java.time.ZoneId;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Slf4j
 @Service
@@ -48,81 +53,99 @@ public class MoonService {
     @Transactional
     public MoonGenerationResultDto generateYearlyData(int year) {
         long startTime = System.currentTimeMillis();
-        log.info("Rozpoczęcie masowego generowania danych astronomiczno-solunarnych dla roku {}", year);
+        log.info("Rozpoczęcie równoległego masowego generowania danych astronomiczno-solunarnych dla roku {}", year);
 
         LocalDate startDate = LocalDate.of(year, 1, 1);
         int totalDays = startDate.lengthOfYear();
 
-        // 1. Obliczenie i zapis danych ogólnopolskich
-        List<MoonGeneralDay> generalDays = new ArrayList<>(totalDays);
-        Map<LocalDate, GeneralMoonDataDto> generalDataMap = new HashMap<>(totalDays);
+        List<LocalDate> allDates = IntStream.rangeClosed(1, totalDays)
+                .mapToObj(d -> startDate.plusDays(d - 1))
+                .toList();
 
-        for (int dayOfYear = 1; dayOfYear <= totalDays; dayOfYear++) {
-            LocalDate date = startDate.plusDays(dayOfYear - 1);
-            GeneralMoonDataDto generalDto = LunarCalculator.calculateGeneralMoonData(date);
-            generalDataMap.put(date, generalDto);
-            generalDays.add(toMoonGeneralDayEntity(date, generalDto));
-        }
+        // 1. Równoległe obliczenie i zapis danych ogólnopolskich
+        Map<LocalDate, GeneralMoonDataDto> generalDataMap = new ConcurrentHashMap<>(totalDays);
+        List<MoonGeneralDay> generalDays = allDates.parallelStream()
+                .map(date -> {
+                    GeneralMoonDataDto generalDto = LunarCalculator.calculateGeneralMoonData(date);
+                    generalDataMap.put(date, generalDto);
+                    return toMoonGeneralDayEntity(date, generalDto);
+                })
+                .sorted(Comparator.comparing(MoonGeneralDay::getCalculationDate))
+                .toList();
+
         moonGeneralDayRepo.saveAll(generalDays);
         log.info("Zapisano {} rekordów ogólnopolskich dla roku {}", generalDays.size(), year);
 
-        // 2. Pobranie stacji meteo IMGW
-        List<ImgwMeteoStation> stations = meteoStationRepo.findAllByIsActiveTrue();
+        // 2. Pobranie stacji synop IMGW
+        List<ImgwSynopStation> stations = synopStationRepo.findAllByIsActiveTrue();
         if (stations.isEmpty()) {
-            stations = meteoStationRepo.findAll();
+            stations = synopStationRepo.findAll();
         }
-        List<ImgwMeteoStation> validStations = stations.stream()
+        List<ImgwSynopStation> validStations = stations.stream()
                 .filter(s -> s.getLat() != null && s.getLon() != null)
                 .toList();
 
-        log.info("Liczba stacji meteo IMGW do przetworzenia: {}", validStations.size());
+        log.info("Liczba stacji synoptycznych IMGW do równoległego przetworzenia: {}", validStations.size());
 
         // Usunięcie ewentualnych starych danych dla tego roku
         LocalDate endDate = LocalDate.of(year, 12, 31);
         moonStationDayRepo.deleteByCalculationDateBetween(startDate, endDate);
 
-        long stationDaysCount = 0;
+        if (validStations.isEmpty()) {
+            long executionTime = System.currentTimeMillis() - startTime;
+            return new MoonGenerationResultDto(
+                    year,
+                    generalDays.size(),
+                    0,
+                    0,
+                    executionTime,
+                    "SUCCESS",
+                    String.format("Pomyślnie wygenerowano i zapisano w bazie dane dla roku %d (%d dni ogólnych, 0 stacji)",
+                            year, generalDays.size())
+            );
+        }
+
+        // 3. Równoległe obliczenia danych stacyjnych z wykorzystaniem Virtual Threads
+        List<CompletableFuture<List<MoonStationDay>>> stationFutures;
+        try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+            stationFutures = validStations.stream()
+                    .map(station -> CompletableFuture.supplyAsync(() -> {
+                        List<MoonStationDay> stationDays = new ArrayList<>(totalDays);
+                        for (LocalDate date : allDates) {
+                            GeneralMoonDataDto generalMoon = generalDataMap.get(date);
+                            SunTimesDto sunTimes = SolarCalculator.calculateSunTimes(station.getLat(), station.getLon(), date, POLAND_ZONE);
+                            MoonTimesDto moonTimes = LunarCalculator.calculateMoonTimes(station.getLat(), station.getLon(), date, POLAND_ZONE);
+                            SolunarDayDto solunar = SolunarCalculator.calculateSolunarDay(generalMoon, sunTimes, moonTimes);
+
+                            stationDays.add(toMoonStationDayEntity(station, date, generalMoon, sunTimes, moonTimes, solunar));
+                        }
+                        return stationDays;
+                    }, executor))
+                    .toList();
+        }
+
+        List<MoonStationDay> allStationDays = stationFutures.stream()
+                .map(CompletableFuture::join)
+                .flatMap(List::stream)
+                .toList();
+
+        // 4. Zapis partiami w bazie danych
         int batchSize = 500;
-        List<MoonStationDay> buffer = new ArrayList<>(batchSize);
-
-        for (ImgwMeteoStation station : validStations) {
-            for (int dayOfYear = 1; dayOfYear <= totalDays; dayOfYear++) {
-                LocalDate date = startDate.plusDays(dayOfYear - 1);
-                GeneralMoonDataDto generalMoon = generalDataMap.get(date);
-
-                SunTimesDto sunTimes = SolarCalculator.calculateSunTimes(station.getLat(), station.getLon(), date, POLAND_ZONE);
-                MoonTimesDto moonTimes = LunarCalculator.calculateMoonTimes(station.getLat(), station.getLon(), date, POLAND_ZONE);
-                SolunarDayDto solunar = SolunarCalculator.calculateSolunarDay(generalMoon, sunTimes, moonTimes);
-
-                MoonStationDay stationDay = toMoonStationDayEntity(station, date, generalMoon, sunTimes, moonTimes, solunar);
-                buffer.add(stationDay);
-                stationDaysCount++;
-
-                if (buffer.size() >= batchSize) {
-                    moonStationDayRepo.saveAll(buffer);
-                    buffer.clear();
-                }
-            }
-        }
-
-        if (!buffer.isEmpty()) {
-            moonStationDayRepo.saveAll(buffer);
-            buffer.clear();
-        }
+        saveInBatches(allStationDays, moonStationDayRepo::saveAll, batchSize);
 
         long executionTime = System.currentTimeMillis() - startTime;
-        log.info("Zakończono generowanie danych astronomiczno-solunarnych dla roku {}. Przetworzono {} stacji, {} rekordów w {} ms",
-                year, validStations.size(), stationDaysCount, executionTime);
+        log.info("Zakończono równoległe generowanie danych astronomiczno-solunarnych dla roku {}. Przetworzono {} stacji, {} rekordów w {} ms",
+                year, validStations.size(), allStationDays.size(), executionTime);
 
         return new MoonGenerationResultDto(
                 year,
                 generalDays.size(),
                 validStations.size(),
-                stationDaysCount,
+                allStationDays.size(),
                 executionTime,
                 "SUCCESS",
                 String.format("Pomyślnie wygenerowano i zapisano w bazie dane dla roku %d (%d dni ogólnych, %d stacji, %d rekordów stacyjnych)",
-                        year, generalDays.size(), validStations.size(), stationDaysCount)
+                        year, generalDays.size(), validStations.size(), allStationDays.size())
         );
     }
 
@@ -235,35 +258,20 @@ public class MoonService {
             }
         }
 
-        // 2. Fallback na dynamiczne obliczenia
-        List<MoonCalendarDayDto> days = new ArrayList<>(ym.lengthOfMonth());
-        int bestFishingDaysCount = 0;
+        // 2. Fallback na równoległe dynamiczne obliczenia
+        List<MoonCalendarDayDto> days = IntStream.rangeClosed(1, ym.lengthOfMonth())
+                .parallel()
+                .mapToObj(day -> {
+                    LocalDate dayDate = ym.atDay(day);
+                    MoonDailyDto daily = getDailyData(location.latitude(), location.longitude(), location.stationId(), dayDate);
+                    return toMoonCalendarDayDto(dayDate, daily);
+                })
+                .sorted(Comparator.comparing(MoonCalendarDayDto::date))
+                .toList();
 
-        for (int day = 1; day <= ym.lengthOfMonth(); day++) {
-            LocalDate dayDate = ym.atDay(day);
-            MoonDailyDto daily = getDailyData(location.latitude(), location.longitude(), location.stationId(), dayDate);
-
-            MoonCalendarDayDto calDay = new MoonCalendarDayDto(
-                    dayDate,
-                    daily.generalMoon().phase(),
-                    daily.generalMoon().illuminationPercentage(),
-                    daily.generalMoon().moonAgeDays(),
-                    daily.sunTimes().sunrise(),
-                    daily.sunTimes().sunset(),
-                    daily.moonTimes().moonrise(),
-                    daily.moonTimes().moonset(),
-                    daily.solunar().overallRating(),
-                    daily.solunar().stars(),
-                    daily.solunar().overallScore(),
-                    daily.generalMoon().isPerigee(),
-                    daily.generalMoon().isApogee()
-            );
-
-            if (daily.solunar().stars() >= 4) {
-                bestFishingDaysCount++;
-            }
-            days.add(calDay);
-        }
+        int bestFishingDaysCount = (int) days.stream()
+                .filter(d -> d.solunarStars() >= 4)
+                .count();
 
         LocalDate firstDay = ym.atDay(1);
         GeneralMoonDataDto generalStart = LunarCalculator.calculateGeneralMoonData(firstDay);
@@ -374,7 +382,16 @@ public class MoonService {
             }
         }
 
-        // 2. Dynamiczny fallback
+        // 2. Dynamiczny fallback - równoległe obliczenia całego roku
+        List<MoonDailyDto> dailyList = IntStream.rangeClosed(1, totalDays)
+                .parallel()
+                .mapToObj(dayOfYear -> {
+                    LocalDate date = startDate.plusDays(dayOfYear - 1);
+                    return getDailyData(location.latitude(), location.longitude(), location.stationId(), date);
+                })
+                .sorted(Comparator.comparing(MoonDailyDto::date))
+                .toList();
+
         List<MoonCalendarDayDto> days = new ArrayList<>(totalDays);
         int excellentDays = 0, veryGoodDays = 0, goodDays = 0, fairDays = 0, poorDays = 0;
         int perigeeDays = 0, apogeeDays = 0;
@@ -383,25 +400,9 @@ public class MoonService {
         List<LocalDate> newMoonDates = new ArrayList<>();
         List<Map<String, Object>> topFishingDays = new ArrayList<>();
 
-        for (int dayOfYear = 1; dayOfYear <= totalDays; dayOfYear++) {
-            LocalDate date = startDate.plusDays(dayOfYear - 1);
-            MoonDailyDto daily = getDailyData(location.latitude(), location.longitude(), location.stationId(), date);
-
-            MoonCalendarDayDto calDay = new MoonCalendarDayDto(
-                    date,
-                    daily.generalMoon().phase(),
-                    daily.generalMoon().illuminationPercentage(),
-                    daily.generalMoon().moonAgeDays(),
-                    daily.sunTimes().sunrise(),
-                    daily.sunTimes().sunset(),
-                    daily.moonTimes().moonrise(),
-                    daily.moonTimes().moonset(),
-                    daily.solunar().overallRating(),
-                    daily.solunar().stars(),
-                    daily.solunar().overallScore(),
-                    daily.generalMoon().isPerigee(),
-                    daily.generalMoon().isApogee()
-            );
+        for (MoonDailyDto daily : dailyList) {
+            LocalDate date = daily.date();
+            MoonCalendarDayDto calDay = toMoonCalendarDayDto(date, daily);
             days.add(calDay);
 
             switch (daily.solunar().overallRating()) {
@@ -463,19 +464,6 @@ public class MoonService {
         if (stationId != null && !stationId.trim().isEmpty()) {
             String sid = stationId.trim();
 
-            // Check IMGW Meteo
-            Optional<ImgwMeteoStation> meteo = meteoStationRepo.findById(sid);
-            if (meteo.isPresent() && meteo.get().getLat() != null && meteo.get().getLon() != null) {
-                return new LocationInfoDto(
-                        meteo.get().getLat(),
-                        meteo.get().getLon(),
-                        meteo.get().getId(),
-                        meteo.get().getName() + " (Stacja Meteorologiczna IMGW)",
-                        0.0,
-                        POLAND_ZONE.getId()
-                );
-            }
-
             // Check IMGW Synop
             Optional<ImgwSynopStation> synop = synopStationRepo.findById(sid);
             if (synop.isPresent() && synop.get().getLat() != null && synop.get().getLon() != null) {
@@ -484,6 +472,19 @@ public class MoonService {
                         synop.get().getLon(),
                         synop.get().getId(),
                         synop.get().getName() + " (Stacja Synoptyczna IMGW)",
+                        0.0,
+                        POLAND_ZONE.getId()
+                );
+            }
+
+            // Check IMGW Meteo
+            Optional<ImgwMeteoStation> meteo = meteoStationRepo.findById(sid);
+            if (meteo.isPresent() && meteo.get().getLat() != null && meteo.get().getLon() != null) {
+                return new LocationInfoDto(
+                        meteo.get().getLat(),
+                        meteo.get().getLon(),
+                        meteo.get().getId(),
+                        meteo.get().getName() + " (Stacja Meteorologiczna IMGW)",
                         0.0,
                         POLAND_ZONE.getId()
                 );
@@ -512,29 +513,34 @@ public class MoonService {
             String nearestStationName = null;
             Double minDistanceKm = null;
 
-            List<ImgwMeteoStation> meteoStations = meteoStationRepo.findAllByIsActiveTrue();
-            if (meteoStations.isEmpty()) {
-                meteoStations = meteoStationRepo.findAll();
+            List<ImgwSynopStation> synopStations = synopStationRepo.findAllByIsActiveTrue();
+            if (synopStations.isEmpty()) {
+                synopStations = synopStationRepo.findAll();
             }
 
-            Optional<ImgwMeteoStation> nearestMeteo = meteoStations.stream()
+            Optional<ImgwSynopStation> nearestSynop = synopStations.stream()
                     .filter(s -> s.getLat() != null && s.getLon() != null)
                     .min(Comparator.comparingDouble(s -> GeoUtils.calculateDistanceKm(lat, lon, s.getLat(), s.getLon())));
 
-            if (nearestMeteo.isPresent()) {
-                double dist = GeoUtils.calculateDistanceKm(lat, lon, nearestMeteo.get().getLat(), nearestMeteo.get().getLon());
-                nearestStationId = nearestMeteo.get().getId();
-                nearestStationName = nearestMeteo.get().getName() + " (Stacja Meteorologiczna IMGW)";
+            if (nearestSynop.isPresent()) {
+                double dist = GeoUtils.calculateDistanceKm(lat, lon, nearestSynop.get().getLat(), nearestSynop.get().getLon());
+                nearestStationId = nearestSynop.get().getId();
+                nearestStationName = nearestSynop.get().getName() + " (Stacja Synoptyczna IMGW)";
                 minDistanceKm = dist;
             } else {
-                Optional<ImgwSynopStation> nearestSynop = synopStationRepo.findAllByIsActiveTrue().stream()
+                List<ImgwMeteoStation> meteoStations = meteoStationRepo.findAllByIsActiveTrue();
+                if (meteoStations.isEmpty()) {
+                    meteoStations = meteoStationRepo.findAll();
+                }
+
+                Optional<ImgwMeteoStation> nearestMeteo = meteoStations.stream()
                         .filter(s -> s.getLat() != null && s.getLon() != null)
                         .min(Comparator.comparingDouble(s -> GeoUtils.calculateDistanceKm(lat, lon, s.getLat(), s.getLon())));
 
-                if (nearestSynop.isPresent()) {
-                    double dist = GeoUtils.calculateDistanceKm(lat, lon, nearestSynop.get().getLat(), nearestSynop.get().getLon());
-                    nearestStationId = nearestSynop.get().getId();
-                    nearestStationName = nearestSynop.get().getName() + " (Stacja Synoptyczna IMGW)";
+                if (nearestMeteo.isPresent()) {
+                    double dist = GeoUtils.calculateDistanceKm(lat, lon, nearestMeteo.get().getLat(), nearestMeteo.get().getLon());
+                    nearestStationId = nearestMeteo.get().getId();
+                    nearestStationName = nearestMeteo.get().getName() + " (Stacja Meteorologiczna IMGW)";
                     minDistanceKm = dist;
                 }
             }
@@ -582,7 +588,7 @@ public class MoonService {
                 .build();
     }
 
-    private MoonStationDay toMoonStationDayEntity(ImgwMeteoStation station, LocalDate date, GeneralMoonDataDto generalMoon,
+    private MoonStationDay toMoonStationDayEntity(ImgwSynopStation station, LocalDate date, GeneralMoonDataDto generalMoon,
                                                  SunTimesDto sunTimes, MoonTimesDto moonTimes, SolunarDayDto solunar) {
         LocalTime major1Start = null, major1End = null, major2Start = null, major2End = null;
         if (solunar.majorPeriods() != null && !solunar.majorPeriods().isEmpty()) {
@@ -775,5 +781,33 @@ public class MoonService {
                 entity.getMoonPhaseInfluence() != null ? entity.getMoonPhaseInfluence() : "",
                 entity.getFishingTip() != null ? entity.getFishingTip() : ""
         );
+    }
+
+    private MoonCalendarDayDto toMoonCalendarDayDto(LocalDate date, MoonDailyDto daily) {
+        return new MoonCalendarDayDto(
+                date,
+                daily.generalMoon().phase(),
+                daily.generalMoon().illuminationPercentage(),
+                daily.generalMoon().moonAgeDays(),
+                daily.sunTimes().sunrise(),
+                daily.sunTimes().sunset(),
+                daily.moonTimes().moonrise(),
+                daily.moonTimes().moonset(),
+                daily.solunar().overallRating(),
+                daily.solunar().stars(),
+                daily.solunar().overallScore(),
+                daily.generalMoon().isPerigee(),
+                daily.generalMoon().isApogee()
+        );
+    }
+
+    private <T> void saveInBatches(List<T> items, Consumer<List<T>> batchConsumer, int batchSize) {
+        if (items == null || items.isEmpty()) return;
+        int effectiveBatchSize = batchSize > 0 ? batchSize : 50;
+        for (int i = 0; i < items.size(); i += effectiveBatchSize) {
+            int end = Math.min(i + effectiveBatchSize, items.size());
+            List<T> batch = items.subList(i, end);
+            batchConsumer.accept(batch);
+        }
     }
 }

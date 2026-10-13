@@ -266,26 +266,50 @@ public final class LunarCalculator {
     }
 
     private static LocalDate findNextPhaseDate(LocalDate startDate, double targetPhase) {
-        LocalDate current = startDate;
-        double currentPhase = calculateMoonPosition(AstroMathUtils.toJulianDate(current, 12.0)).phaseValue();
+        double currentPhase = calculateMoonPosition(AstroMathUtils.toJulianDate(startDate, 12.0)).phaseValue();
 
-        // Advance until phase passes targetPhase
-        for (int i = 1; i <= 35; i++) {
+        double diff = (targetPhase >= currentPhase) ? (targetPhase - currentPhase) : (1.0 + targetPhase - currentPhase);
+        int approxDays = (int) Math.floor(diff * AstroMathUtils.SYNODIC_MONTH);
+        int startSearch = Math.max(1, approxDays - 2);
+
+        LocalDate prevDay = startDate.plusDays(startSearch - 1);
+        double prevPhase = calculateMoonPosition(AstroMathUtils.toJulianDate(prevDay, 12.0)).phaseValue();
+
+        int maxSearch = Math.min(36, approxDays + 4);
+        for (int i = startSearch; i <= maxSearch; i++) {
             LocalDate nextDay = startDate.plusDays(i);
             double nextPhase = calculateMoonPosition(AstroMathUtils.toJulianDate(nextDay, 12.0)).phaseValue();
 
             if (targetPhase == 0.0) {
-                if (currentPhase > 0.85 && nextPhase < 0.15) {
+                if (prevPhase > 0.85 && nextPhase < 0.15) {
                     return nextDay;
                 }
             } else {
-                if (currentPhase < targetPhase && nextPhase >= targetPhase) {
+                if (prevPhase < targetPhase && nextPhase >= targetPhase) {
                     return nextDay;
                 }
             }
-            currentPhase = nextPhase;
+            prevPhase = nextPhase;
         }
-        return startDate.plusDays((long) Math.round((targetPhase - currentPhase) * AstroMathUtils.SYNODIC_MONTH));
+
+        // Fallback jeśli faza wypadła poza oknem przybliżenia
+        prevPhase = currentPhase;
+        for (int i = 1; i <= 35; i++) {
+            LocalDate nextDay = startDate.plusDays(i);
+            double nextPhase = calculateMoonPosition(AstroMathUtils.toJulianDate(nextDay, 12.0)).phaseValue();
+            if (targetPhase == 0.0) {
+                if (prevPhase > 0.85 && nextPhase < 0.15) {
+                    return nextDay;
+                }
+            } else {
+                if (prevPhase < targetPhase && nextPhase >= targetPhase) {
+                    return nextDay;
+                }
+            }
+            prevPhase = nextPhase;
+        }
+
+        return startDate.plusDays((long) Math.round(diff * AstroMathUtils.SYNODIC_MONTH));
     }
 
     private static LocalTime hourToLocalTime(double decimalHour) {

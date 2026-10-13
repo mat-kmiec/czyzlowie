@@ -78,7 +78,7 @@ class MoonServiceTest {
     @DisplayName("Should return daily moon data for given coordinates (fallback to calculator)")
     void shouldReturnDailyMoonDataForCoords() {
         LocalDate date = LocalDate.of(2026, 10, 13);
-        when(meteoStationRepo.findAllByIsActiveTrue()).thenReturn(List.of(mockMeteoStation));
+        when(synopStationRepo.findAllByIsActiveTrue()).thenReturn(List.of(mockSynopStation));
 
         MoonDailyDto result = moonService.getDailyData(52.23, 21.01, null, date);
 
@@ -96,20 +96,20 @@ class MoonServiceTest {
     @DisplayName("Should return daily moon data when station ID is provided")
     void shouldReturnDailyMoonDataForStationId() {
         LocalDate date = LocalDate.of(2026, 10, 13);
-        when(meteoStationRepo.findById("M_WARSZAWA")).thenReturn(Optional.of(mockMeteoStation));
+        when(synopStationRepo.findById("352200375")).thenReturn(Optional.of(mockSynopStation));
 
-        MoonDailyDto result = moonService.getDailyData(null, null, "M_WARSZAWA", date);
+        MoonDailyDto result = moonService.getDailyData(null, null, "352200375", date);
 
         assertThat(result).isNotNull();
-        assertThat(result.location().stationId()).isEqualTo("M_WARSZAWA");
-        assertThat(result.location().latitude()).isEqualTo(52.28);
-        assertThat(result.location().longitude()).isEqualTo(20.95);
+        assertThat(result.location().stationId()).isEqualTo("352200375");
+        assertThat(result.location().latitude()).isEqualTo(52.16);
+        assertThat(result.location().longitude()).isEqualTo(20.96);
     }
 
     @Test
     @DisplayName("Should generate yearly moon data and save to DB in batches")
     void shouldGenerateYearlyDataAndPersist() {
-        when(meteoStationRepo.findAllByIsActiveTrue()).thenReturn(List.of(mockMeteoStation));
+        when(synopStationRepo.findAllByIsActiveTrue()).thenReturn(List.of(mockSynopStation));
 
         MoonGenerationResultDto result = moonService.generateYearlyData(2027);
 
@@ -125,9 +125,43 @@ class MoonServiceTest {
     }
 
     @Test
+    @DisplayName("Should generate yearly moon data in parallel for multiple stations")
+    void shouldGenerateYearlyDataInParallelForMultipleStations() {
+        ImgwSynopStation station2 = ImgwSynopStation.builder()
+                .id("350190566")
+                .name("KRAKOW-BALICE")
+                .lat(50.08)
+                .lon(19.80)
+                .isActive(true)
+                .build();
+
+        ImgwSynopStation station3 = ImgwSynopStation.builder()
+                .id("354180155")
+                .name("GDANSK-REBIECHOWO")
+                .lat(54.38)
+                .lon(18.47)
+                .isActive(true)
+                .build();
+
+        when(synopStationRepo.findAllByIsActiveTrue()).thenReturn(List.of(mockSynopStation, station2, station3));
+
+        MoonGenerationResultDto result = moonService.generateYearlyData(2027);
+
+        assertThat(result).isNotNull();
+        assertThat(result.year()).isEqualTo(2027);
+        assertThat(result.generalDaysProcessed()).isEqualTo(365);
+        assertThat(result.stationsProcessed()).isEqualTo(3);
+        assertThat(result.stationDaysProcessed()).isEqualTo(365 * 3);
+        assertThat(result.status()).isEqualTo("SUCCESS");
+
+        verify(moonGeneralDayRepo).saveAll(any());
+        verify(moonStationDayRepo, atLeastOnce()).saveAll(any());
+    }
+
+    @Test
     @DisplayName("Should return monthly calendar data")
     void shouldReturnMonthlyData() {
-        when(meteoStationRepo.findAllByIsActiveTrue()).thenReturn(List.of(mockMeteoStation));
+        when(synopStationRepo.findAllByIsActiveTrue()).thenReturn(List.of(mockSynopStation));
 
         MoonMonthlyDto result = moonService.getMonthlyData(52.23, 21.01, null, 2026, 10);
 
@@ -141,7 +175,7 @@ class MoonServiceTest {
     @Test
     @DisplayName("Should return yearly admin calculations")
     void shouldReturnYearlyAdminData() {
-        when(meteoStationRepo.findAllByIsActiveTrue()).thenReturn(List.of(mockMeteoStation));
+        when(synopStationRepo.findAllByIsActiveTrue()).thenReturn(List.of(mockSynopStation));
 
         MoonYearlyAdminDto result = moonService.getYearlyAdminData(2027, 52.23, 21.01, null);
 
