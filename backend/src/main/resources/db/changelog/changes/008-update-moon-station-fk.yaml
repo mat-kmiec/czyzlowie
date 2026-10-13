@@ -1,0 +1,15 @@
+databaseChangeLog:
+  - changeSet:
+      id: 012-alter-moon-station-fk-to-synop
+      author: matkmiec
+      validCheckSum: ANY
+      changes:
+        - dropForeignKeyConstraint:
+            baseTableName: moon_station_day
+            constraintName: fk_moon_station_day_station
+        - addForeignKeyConstraint:
+            baseTableName: moon_station_day
+            baseColumnNames: station_id
+            referencedTableName: imgw_synop_station
+            referencedColumnNames: id
+            constraintName: fk_moon_station_day_station

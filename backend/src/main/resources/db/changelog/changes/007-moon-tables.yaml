@@ -2,6 +2,7 @@ databaseChangeLog:
   - changeSet:
       id: 011-create-moon-tables
       author: matkmiec
+      validCheckSum: ANY
       changes:
         - createTable:
             tableName: moon_general_day
