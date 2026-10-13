@@ -23,3 +23,9 @@ databaseChangeLog:
   - include:
       file: changes/008-update-moon-station-fk.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changes/009-fish-species-tables.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: changes/010-fish-species-gear-and-safety.yaml
+      relativeToChangelogFile: true

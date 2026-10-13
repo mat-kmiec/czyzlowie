@@ -1,0 +1,166 @@
+databaseChangeLog:
+  - changeSet:
+      id: 013-create-fish-species-tables
+      author: matkmiec
+      validCheckSum: ANY
+      changes:
+        - createTable:
+            tableName: fish_species
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints: { primaryKey: true, nullable: false }
+              - column:
+                  name: slug
+                  type: VARCHAR(100)
+                  constraints: { nullable: false, unique: true, uniqueConstraintName: uq_fish_species_slug }
+              - column:
+                  name: name
+                  type: VARCHAR(100)
+                  constraints: { nullable: false, unique: true, uniqueConstraintName: uq_fish_species_name }
+              - column:
+                  name: latin_name
+                  type: VARCHAR(100)
+                  constraints: { nullable: false }
+              - column:
+                  name: family
+                  type: VARCHAR(100)
+                  constraints: { nullable: false }
+              - column:
+                  name: fish_type
+                  type: VARCHAR(50)
+                  constraints: { nullable: false }
+              - column:
+                  name: image_url
+                  type: VARCHAR(500)
+              - column:
+                  name: thumbnail_url
+                  type: VARCHAR(500)
+              - column:
+                  name: short_description
+                  type: VARCHAR(500)
+              - column:
+                  name: description
+                  type: VARCHAR(4000)
+              - column:
+                  name: identification_features
+                  type: VARCHAR(4000)
+              - column:
+                  name: min_size_limit
+                  type: INTEGER
+              - column:
+                  name: max_size_limit
+                  type: INTEGER
+              - column:
+                  name: protection_period
+                  type: VARCHAR(255)
+              - column:
+                  name: daily_limit
+                  type: VARCHAR(255)
+              - column:
+                  name: legal_status
+                  type: VARCHAR(50)
+                  constraints: { nullable: false }
+              - column:
+                  name: legal_notes
+                  type: VARCHAR(4000)
+              - column:
+                  name: record_weight_kg
+                  type: DOUBLE PRECISION
+              - column:
+                  name: record_length_cm
+                  type: DOUBLE PRECISION
+              - column:
+                  name: record_year
+                  type: INTEGER
+              - column:
+                  name: record_angler
+                  type: VARCHAR(150)
+              - column:
+                  name: average_weight
+                  type: VARCHAR(100)
+              - column:
+                  name: average_length
+                  type: VARCHAR(100)
+              - column:
+                  name: water_preferences
+                  type: VARCHAR(4000)
+              - column:
+                  name: water_zone
+                  type: VARCHAR(50)
+              - column:
+                  name: natural_food
+                  type: VARCHAR(4000)
+              - column:
+                  name: spawning_months
+                  type: VARCHAR(100)
+              - column:
+                  name: active_months
+                  type: VARCHAR(100)
+              - column:
+                  name: similar_species
+                  type: VARCHAR(4000)
+              - column:
+                  name: daily_activity
+                  type: VARCHAR(4000)
+              - column:
+                  name: seasonal_activity
+                  type: VARCHAR(4000)
+              - column:
+                  name: weather_preferences
+                  type: VARCHAR(4000)
+              - column:
+                  name: effective_methods
+                  type: VARCHAR(4000)
+              - column:
+                  name: best_artificial_baits
+                  type: VARCHAR(4000)
+              - column:
+                  name: best_natural_baits
+                  type: VARCHAR(4000)
+              - column:
+                  name: bite_and_fight_characteristics
+                  type: VARCHAR(4000)
+              - column:
+                  name: typical_spots
+                  type: VARCHAR(4000)
+              - column:
+                  name: difficulty
+                  type: VARCHAR(50)
+              - column:
+                  name: display_order
+                  type: INTEGER
+                  defaultValueNumeric: 0
+              - column:
+                  name: is_active
+                  type: BOOLEAN
+                  defaultValueBoolean: true
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP
+
+        - createIndex:
+            indexName: idx_fish_species_type
+            tableName: fish_species
+            columns:
+              - column:
+                  name: fish_type
+
+        - createIndex:
+            indexName: idx_fish_species_legal_status
+            tableName: fish_species
+            columns:
+              - column:
+                  name: legal_status
+
+        - createIndex:
+            indexName: idx_fish_species_display_order
+            tableName: fish_species
+            columns:
+              - column:
+                  name: display_order
