@@ -28,6 +28,10 @@ public class CacheConfig {
     public static final String CACHE_AIR_QUALITY_FORECAST = "airQualityForecast";
     public static final String CACHE_AIR_QUALITY_OVERVIEW = "airQualityOverview";
 
+    public static final String CACHE_MOON_DAILY = "moonDaily";
+    public static final String CACHE_MOON_MONTHLY = "moonMonthly";
+    public static final String CACHE_MOON_YEARLY = "moonYearly";
+
     @Bean
     public CacheManager cacheManager() {
         CaffeineCacheManager cacheManager = new CaffeineCacheManager(
@@ -43,7 +47,10 @@ public class CacheConfig {
                 CACHE_AIR_QUALITY_STATION_DETAILS,
                 CACHE_AIR_QUALITY_NEAREST,
                 CACHE_AIR_QUALITY_FORECAST,
-                CACHE_AIR_QUALITY_OVERVIEW
+                CACHE_AIR_QUALITY_OVERVIEW,
+                CACHE_MOON_DAILY,
+                CACHE_MOON_MONTHLY,
+                CACHE_MOON_YEARLY
         );
         cacheManager.setCaffeine(Caffeine.newBuilder()
                 .expireAfterWrite(10, TimeUnit.MINUTES)

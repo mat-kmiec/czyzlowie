@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pl">
+<html lang="pl" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,7 +8,7 @@
     <!-- Fonts & Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;600;700;900&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     
     <!-- Tailwind CSS -->
@@ -39,13 +39,30 @@
         body {
             background-color: #050505;
             color: #ffffff;
-            overflow: hidden; /* Prevent scrolling during animation */
+            overflow-x: hidden;
             margin: 0;
             padding: 0;
             -webkit-font-smoothing: antialiased;
         }
 
-        /* Preloader Container Overlay */
+        body.locked {
+            overflow: hidden;
+        }
+
+        /* Glowing text & SVG effects */
+        .text-glow-mint { text-shadow: 0 0 20px rgba(0, 255, 136, 0.8), 0 0 40px rgba(0, 255, 136, 0.4); }
+        .text-glow-white { text-shadow: 0 0 15px rgba(255, 255, 255, 0.4); }
+        .svg-glow-mint { filter: drop-shadow(0 0 12px rgba(0, 255, 136, 0.9)); }
+        
+        /* Glassmorphism utilities */
+        .glass-panel {
+            background: rgba(17, 17, 17, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--tw-border-opacity, rgba(34, 34, 34, 1));
+        }
+
+        /* Preloader */
         #preloader {
             position: fixed;
             top: 0;
@@ -57,209 +74,351 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            overflow: hidden;
         }
 
-        /* Responsive SVG container */
-        #preloader-svg {
+        /* SVG Containers */
+        .svg-container {
             width: 100%;
-            max-width: 1200px;
             height: auto;
-            max-height: 100vh;
-            transform-origin: center center;
+            max-width: 1200px;
+            margin: 0 auto;
+            display: block;
         }
-
-        /* Glowing text effects */
-        .text-glow-mint { text-shadow: 0 0 20px rgba(0, 255, 136, 0.8), 0 0 40px rgba(0, 255, 136, 0.4); }
-        .text-glow-white { text-shadow: 0 0 15px rgba(255, 255, 255, 0.5); }
-        .svg-glow-mint { filter: drop-shadow(0 0 12px rgba(0, 255, 136, 0.9)); }
-
-        /* Skip Button styling */
-        #skip-btn {
-            position: absolute;
-            bottom: 2rem;
-            right: 2rem;
-            background: transparent;
-            border: 1px solid rgba(255,255,255,0.2);
-            color: rgba(255,255,255,0.6);
-            padding: 0.75rem 1.5rem;
-            border-radius: 9999px;
-            font-size: 0.875rem;
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            z-index: 10000;
-        }
-        #skip-btn:hover {
-            border-color: #00FF88;
-            color: #00FF88;
-            box-shadow: 0 0 15px rgba(0, 255, 136, 0.3);
-        }
-
+        
         /* Main content hidden initially */
         #main-content {
             opacity: 0;
             display: none;
             width: 100%;
-            min-height: 100vh;
-            background-color: #050505; /* Zero gradientów, absolutna czerń */
+            background-color: #050505;
         }
         
-        /* Custom input autofill override for dark theme */
-        input:-webkit-autofill {
-            -webkit-box-shadow: 0 0 0 30px #111111 inset !important;
-            -webkit-text-fill-color: white !important;
-        }
+        /* Hide scrollbar for cleaner look */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #050505; }
+        ::-webkit-scrollbar-thumb { background: #222; }
+        ::-webkit-scrollbar-thumb:hover { background: #00FF88; }
     </style>
 </head>
-<body class="selection:bg-brand-mint selection:text-black">
+<body class="selection:bg-brand-mint selection:text-black locked">
 
-    <!-- PRELOADER ANIMATION SCENE -->
     <div id="preloader">
-        <svg id="preloader-svg" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid meet">
-            <defs>
-                <filter id="neon" x="-50%" y="-50%" width="200%" height="200%">
-                    <feGaussianBlur stdDeviation="4" result="blur" />
-                    <feMerge>
-                        <feMergeNode in="blur" />
-                        <feMergeNode in="blur" />
-                        <feMergeNode in="SourceGraphic" />
-                    </feMerge>
-                </filter>
-            </defs>
-
-            <line x1="100" y1="450" x2="900" y2="450" stroke="rgba(255,255,255,0.05)" stroke-width="1" />
-
-            <g id="fisherman-group">
-                <path d="M 170 450 L 200 350 L 200 270" fill="none" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
-                <circle cx="200" cy="240" r="14" fill="none" stroke="white" stroke-width="4" />
-                <g id="arm-rod">
-                    <path d="M 200 270 L 250 310" fill="none" stroke="white" stroke-width="4" stroke-linecap="round" />
-                    <path id="rod" d="M 150 380 L 250 310 L 600 150" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" />
-                </g>
-            </g>
-
-            <path id="fishing-line" d="M 600 150 Q 700 100 750 450" fill="none" stroke="#00FF88" stroke-width="1.5" filter="url(#neon)" />
-
-            <g id="splashes">
-                <circle class="splash-ring" cx="750" cy="450" r="10" fill="none" stroke="#00FF88" stroke-width="3" filter="url(#neon)" opacity="0"/>
-                <circle class="splash-ring" cx="750" cy="450" r="25" fill="none" stroke="#00FF88" stroke-width="2" filter="url(#neon)" opacity="0"/>
-                <circle class="splash-ring" cx="750" cy="450" r="45" fill="none" stroke="#00FF88" stroke-width="1" filter="url(#neon)" opacity="0"/>
-            </g>
-
-            <g id="caught-fish" opacity="0" filter="url(#neon)">
-                <path d="M 0 0 C 20 -20 40 -20 60 0 L 80 -15 L 80 15 L 60 0 C 40 20 20 20 0 0 Z" fill="none" stroke="#00FF88" stroke-width="3" stroke-linejoin="round"/>
-                <circle cx="15" cy="-3" r="2" fill="#00FF88"/>
-            </g>
-        </svg>
-
-        <button id="skip-btn">Pomiń animację</button>
+        <div class="flex flex-col items-center justify-center text-center">
+            <h1 class="text-5xl md:text-7xl font-black tracking-tight flex items-center" id="preloader-logo">
+                <span class="text-white">Czy</span><span class="text-brand-mint text-glow-mint">Złowie</span>
+                <svg class="w-10 h-10 ml-2 text-brand-mint svg-glow-mint" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2v6" />
+                    <path d="M12 8c-3.3 0-6 2.7-6 6v2c0 2.2 1.8 4 4 4s4-1.8 4-4" />
+                    <path d="M10 16l2-2 2 2" />
+                </svg>
+            </h1>
+            <div class="w-48 h-px bg-brand-border mt-6 relative overflow-hidden">
+                <div id="preloader-bar" class="absolute top-0 left-0 h-full bg-brand-mint w-0 shadow-[0_0_10px_#00FF88]"></div>
+            </div>
+        </div>
     </div>
 
-    <!-- MAIN CONTENT (Revealed after animation) -->
     <main id="main-content">
         
-        <!-- HEADER / HERO -->
-        <header class="pt-24 pb-16 px-6 max-w-7xl mx-auto text-center">
-            <div id="logo-reveal" class="flex flex-col items-center justify-center text-center mb-10">
-                <div class="flex items-center justify-center mb-4 select-none">
-                    <h1 class="text-5xl md:text-7xl font-black tracking-tight">
-                        <span class="text-white text-glow-white">Czy</span><span class="text-brand-mint text-glow-mint">Złowie.pl</span>
-                    </h1>
-                    <svg class="w-10 h-10 md:w-16 md:h-16 ml-2 text-brand-mint svg-glow-mint" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M12 2v6" />
-                        <path d="M12 8c-3.3 0-6 2.7-6 6v2c0 2.2 1.8 4 4 4s4-1.8 4-4" />
-                        <path d="M10 16l2-2 2 2" />
-                    </svg>
-                </div>
-                <p class="text-xs md:text-sm font-bold tracking-[0.3em] text-gray-500 uppercase">
+        <!-- HEADER / HERO WITH SPINNING ANIMATION -->
+        <header class="pt-20 pb-16 px-6 max-w-7xl mx-auto text-center border-b border-brand-border">
+            
+            <div class="flex flex-col items-center justify-center text-center mb-8">
+                <p class="text-xs md:text-sm font-semibold tracking-[0.4em] text-brand-mint uppercase mb-6 drop-shadow-[0_0_8px_rgba(0,255,136,0.5)]">
                     Nowa generacja wędkowania. Już wkrótce.
                 </p>
-            </div>
-            
-            <div class="main-elements opacity-0 translate-y-8">
-                <h2 class="text-3xl md:text-5xl font-bold mb-6 tracking-tight">
-                    Wędkarstwo oparte na <span class="text-brand-mint">czystych danych.</span>
+                <h2 class="text-4xl md:text-6xl font-light mb-6 tracking-tight">
+                    Wędkarstwo oparte na <br><span class="font-black text-white text-glow-white">twardych danych.</span>
                 </h2>
-                <p class="text-gray-400 max-w-2xl mx-auto text-lg leading-relaxed">
+                <p class="text-gray-400 max-w-2xl mx-auto text-lg font-light leading-relaxed">
                     Koniec z domysłami. Przebudowaliśmy nasz system od podstaw, łącząc potężne źródła meteo, hydro i alerty GIOŚ z nowym kalendarzem solunarnym.
                 </p>
             </div>
+
+            <!-- SPINNING ANIMATION SVG -->
+            <div class="relative w-full h-[300px] md:h-[400px] mt-10 overflow-hidden bg-brand-dark border border-brand-border">
+                <svg id="spinning-scene" viewBox="0 0 1000 400" preserveAspectRatio="xMidYMid slice" class="w-full h-full">
+                    <defs>
+                        <filter id="neon-spin" x="-50%" y="-50%" width="200%" height="200%">
+                            <feGaussianBlur stdDeviation="3" result="blur" />
+                            <feMerge>
+                                <feMergeNode in="blur" />
+                                <feMergeNode in="blur" />
+                                <feMergeNode in="SourceGraphic" />
+                            </feMerge>
+                        </filter>
+                    </defs>
+
+                    <!-- Background / Water Line -->
+                    <line x1="150" y1="320" x2="1000" y2="320" stroke="#111" stroke-width="2" />
+                    
+                    <!-- Shore -->
+                    <path d="M 0 400 L 200 400 L 150 320 L 0 320 Z" fill="#0a0a0a" stroke="#222" stroke-width="1"/>
+
+                    <!-- Angler Group -->
+                    <g id="spin-angler">
+                        <!-- Body -->
+                        <path d="M 80 320 L 100 240 L 95 180" fill="none" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+                        <circle cx="95" cy="155" r="12" fill="none" stroke="white" stroke-width="4" />
+                        <!-- Arm & Rod Pivot (Shoulder: 95, 180) -->
+                        <g id="spin-arm-rod">
+                            <path d="M 95 180 L 140 210" fill="none" stroke="white" stroke-width="4" stroke-linecap="round" />
+                            <!-- Rod -->
+                            <path id="spin-rod" d="M 50 260 L 140 210 L 350 70" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" />
+                        </g>
+                    </g>
+
+                    <!-- Fishing Line (Dynamic path connected to rod tip and wobbler) -->
+                    <path id="spin-line" d="M 350 70 Q 350 70 350 70" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1" />
+
+                    <!-- Wobbler / Lure -->
+                    <g id="spin-wobbler" opacity="0">
+                        <circle cx="0" cy="0" r="3" fill="#00FF88" filter="url(#neon-spin)" />
+                    </g>
+
+                    <!-- Splashes -->
+                    <g id="spin-splashes">
+                        <!-- Lure landing splash -->
+                        <circle id="spin-splash-1" cx="700" cy="320" r="10" fill="none" stroke="white" stroke-width="1" opacity="0" />
+                        <circle id="spin-splash-2" cx="700" cy="320" r="20" fill="none" stroke="white" stroke-width="1" opacity="0" />
+                        <!-- Huge strike splash -->
+                        <path id="strike-splash" d="M 580 320 Q 600 250 620 320 M 600 320 Q 620 200 640 320 M 620 320 Q 640 270 660 320" fill="none" stroke="#00FF88" stroke-width="2" filter="url(#neon-spin)" opacity="0" />
+                    </g>
+
+                    <!-- Pike (Szczupak) -->
+                    <g id="spin-pike" opacity="0">
+                        <path d="M 0 0 C 30 -15 70 -15 100 0 L 120 -5 L 120 5 L 100 0 C 70 15 30 15 0 0 Z" fill="none" stroke="#00FF88" stroke-width="2" filter="url(#neon-spin)" stroke-linejoin="round"/>
+                        <circle cx="15" cy="-2" r="1.5" fill="#00FF88"/>
+                        <!-- Lower jaw -->
+                        <path d="M 0 0 L 10 5" fill="none" stroke="#00FF88" stroke-width="1"/>
+                    </g>
+                </svg>
+            </div>
         </header>
 
-        <!-- FEATURES GRID -->
-        <section class="max-w-7xl mx-auto px-6 py-12">
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <!-- MASSIVE STATS -->
+        <section class="max-w-7xl mx-auto px-6 py-20">
+            <div class="glass-panel p-10 text-center rounded-none relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-brand-dark via-brand-mint to-brand-dark"></div>
+                <h3 class="text-gray-500 font-light tracking-[0.3em] text-xs uppercase mb-12">Zaufanie w obecnej, testowej wersji</h3>
                 
-                <div class="feature-card main-elements opacity-0 translate-y-8 bg-brand-surface border border-brand-border p-8 hover:border-brand-mint transition-colors duration-300">
-                    <i class="ph ph-cloud-rain text-4xl text-brand-mint mb-6 block"></i>
-                    <h3 class="text-xl font-bold mb-3">Zintegrowane Meteo & Hydro</h3>
-                    <p class="text-gray-400 text-sm leading-relaxed">
-                        Surowe, potężne dane prosto z IMGW (hydro, meteo, synop) połączone z precyzją Open-Meteo. Dokładna analiza warunków na łowisku w czasie rzeczywistym.
-                    </p>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-8 divide-y md:divide-y-0 lg:divide-x divide-brand-border">
+                    <div class="flex flex-col items-center pt-8 md:pt-0">
+                        <span class="text-5xl lg:text-6xl font-black text-brand-mint tracking-tighter drop-shadow-[0_0_15px_rgba(0,255,136,0.3)]">34 728</span>
+                        <span class="text-gray-400 text-sm mt-4 font-light uppercase tracking-wider">Aktywni użytkownicy</span>
+                    </div>
+                    <div class="flex flex-col items-center pt-8 md:pt-0">
+                        <span class="text-5xl lg:text-6xl font-black text-white tracking-tighter">28 677</span>
+                        <span class="text-gray-400 text-sm mt-4 font-light uppercase tracking-wider">Nowi użytkownicy</span>
+                    </div>
+                    <div class="flex flex-col items-center pt-8 md:pt-0">
+                        <span class="text-5xl lg:text-6xl font-black text-white tracking-tighter">4m 12s</span>
+                        <span class="text-gray-400 text-sm mt-4 font-light uppercase tracking-wider text-center">Średni czas zaangażowania</span>
+                    </div>
+                    <div class="flex flex-col items-center pt-8 md:pt-0">
+                        <span class="text-5xl lg:text-6xl font-black text-brand-mint tracking-tighter drop-shadow-[0_0_15px_rgba(0,255,136,0.3)]">1,2 mln</span>
+                        <span class="text-gray-400 text-sm mt-4 font-light uppercase tracking-wider">Zdarzeń w systemie</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- WHAT STAYS / WHAT GOES & DEV DIARY -->
+        <section class="max-w-7xl mx-auto px-6 py-12">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                
+                <!-- Comparison -->
+                <div class="lg:col-span-2 glass-panel p-8 md:p-12 rounded-none">
+                    <h2 class="text-2xl md:text-3xl font-light mb-8">Robimy czystki. <br><span class="font-bold text-white text-glow-white">Co zostaje, a co wylatuje?</span></h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <!-- Goes -->
+                        <div>
+                            <h4 class="text-red-400 font-bold tracking-wider text-sm uppercase mb-4 flex items-center">
+                                <i class="ph ph-trash text-xl mr-2"></i> To wyrzucamy
+                            </h4>
+                            <ul class="space-y-4 text-gray-400 font-light text-sm">
+                                <li class="flex items-start"><i class="ph ph-x text-red-400 mt-1 mr-3"></i> Subiektywne, przestarzałe opisy łowisk i opowieści.</li>
+                                <li class="flex items-start"><i class="ph ph-x text-red-400 mt-1 mr-3"></i> Tanie skrypty pogodowe sprawdzające się w 30%.</li>
+                                <li class="flex items-start"><i class="ph ph-x text-red-400 mt-1 mr-3"></i> Zgadywanie aktywności ryb "na oko".</li>
+                            </ul>
+                        </div>
+                        
+                        <!-- Stays / Enters -->
+                        <div>
+                            <h4 class="text-brand-mint font-bold tracking-wider text-sm uppercase mb-4 flex items-center drop-shadow-[0_0_5px_rgba(0,255,136,0.5)]">
+                                <i class="ph ph-rocket-launch text-xl mr-2"></i> To wprowadzamy
+                            </h4>
+                            <ul class="space-y-4 text-gray-300 font-light text-sm">
+                                <li class="flex items-start"><i class="ph ph-check text-brand-mint mt-1 mr-3"></i> Surowe dane hydro/meteo z IMGW oraz Open-Meteo.</li>
+                                <li class="flex items-start"><i class="ph ph-check text-brand-mint mt-1 mr-3"></i> Błyskawiczne alerty GIOŚ o jakości środowiska i powietrza.</li>
+                                <li class="flex items-start"><i class="ph ph-check text-brand-mint mt-1 mr-3"></i> Potężny kalendarz solunarny (fazy księżyca, grawitacja).</li>
+                                <li class="flex items-start"><i class="ph ph-check text-brand-mint mt-1 mr-3"></i> Twarde dane GIS: weryfikowane slipy do wodowania, starorzecza, topografia.</li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="feature-card main-elements opacity-0 translate-y-8 bg-brand-surface border border-brand-border p-8 hover:border-brand-mint transition-colors duration-300">
-                    <i class="ph ph-warning-circle text-4xl text-brand-mint mb-6 block"></i>
-                    <h3 class="text-xl font-bold mb-3">Ostrzeżenia i GIOŚ</h3>
-                    <p class="text-gray-400 text-sm leading-relaxed">
-                        Jakość środowiska ma znaczenie. Integrujemy dane z GIOŚ o jakości powietrza oraz błyskawiczne alerty hydrologiczne i ostrzeżenia o załamaniach pogody.
+                <!-- Dev Diary -->
+                <div class="glass-panel p-8 rounded-none border-l-4 border-l-brand-mint">
+                    <h3 class="text-sm font-bold text-brand-mint uppercase tracking-widest mb-4">Z pamiętnika dewelopera</h3>
+                    <p class="text-gray-400 font-light text-sm leading-relaxed mb-4 text-justify">
+                        "Poprzedni system rozrósł się do granic możliwości. Stare kody przypominały spaghetti, a my chcieliśmy dać Wam coś, co po prostu działa błyskawicznie i opiera się na matematyce, a nie magii. Zdecydowaliśmy się na drastyczny krok: usunęliśmy stary kod w całości."
                     </p>
-                </div>
-
-                <div class="feature-card main-elements opacity-0 translate-y-8 bg-brand-surface border border-brand-border p-8 hover:border-brand-mint transition-colors duration-300">
-                    <i class="ph ph-moon-stars text-4xl text-brand-mint mb-6 block"></i>
-                    <h3 class="text-xl font-bold mb-3">Ulepszony Solunarny</h3>
-                    <p class="text-gray-400 text-sm leading-relaxed">
-                        Całkowicie nowy kalendarz brań. Zaawansowane obliczenia astronomiczne, wpływ faz księżyca, tranzyty i grawitacja dla precyzyjnego wyznaczania okien żerowania.
+                    <p class="text-gray-400 font-light text-sm leading-relaxed text-justify">
+                        "Teraz piszemy to od nowa, celując w architekturę, która uniesie miliony zapytań do API IMGW. Będzie natywna apka iOS/Android i ultra-szybki Web. Czekajcie, warto."
                     </p>
-                </div>
-
-                <div class="feature-card main-elements opacity-0 translate-y-8 bg-brand-surface border border-brand-border p-8 hover:border-brand-mint transition-colors duration-300">
-                    <i class="ph ph-map-pin-line text-4xl text-brand-mint mb-6 block"></i>
-                    <h3 class="text-xl font-bold mb-3">Mapy Przestrzenne</h3>
-                    <p class="text-gray-400 text-sm leading-relaxed">
-                        Tylko rzetelne dane GIS. Wskazujemy weryfikowalne lokalizacje slipów do wodowania łodzi, strefy PZW i wyraźne oznaczenia topograficzne oraz starorzecza.
-                    </p>
+                    <div class="mt-6 flex items-center justify-between text-xs text-gray-500 font-mono">
+                        <span>// refactoring_core</span>
+                        <span>[ 100% ]</span>
+                    </div>
                 </div>
 
             </div>
         </section>
 
-        <!-- PLATFORMS -->
-        <section class="border-y border-brand-border mt-12 py-16 bg-[#080808]">
-            <div class="max-w-7xl mx-auto px-6 text-center main-elements opacity-0 translate-y-8">
-                <h4 class="text-gray-500 uppercase tracking-[0.2em] text-xs font-bold mb-8">Dostępne na wszystkich platformach</h4>
-                <div class="flex flex-col sm:flex-row justify-center items-center gap-8 sm:gap-16">
-                    <div class="flex items-center gap-3 text-lg font-semibold"><i class="ph ph-browser text-2xl text-brand-mint"></i> Web Portal</div>
-                    <div class="flex items-center gap-3 text-lg font-semibold"><i class="ph ph-apple-logo text-2xl text-brand-mint"></i> iOS App</div>
-                    <div class="flex items-center gap-3 text-lg font-semibold"><i class="ph ph-android-logo text-2xl text-brand-mint"></i> Android App</div>
-                </div>
+        <!-- WOW ANIMATION: DRIFTING BOAT -->
+        <section class="w-full mt-12 bg-brand-dark border-y border-brand-border overflow-hidden relative" style="height: 500px;">
+            <div class="absolute inset-0 z-10 pointer-events-none flex flex-col items-center justify-start pt-12">
+                <h2 class="text-3xl font-light tracking-wide text-white text-glow-white mb-2">Technologia, która dryfuje za Tobą.</h2>
+                <p class="text-gray-500 font-light tracking-widest text-xs uppercase">Bądź pewny każdego rzutu</p>
             </div>
+
+            <svg id="boat-scene" viewBox="0 0 1200 500" preserveAspectRatio="xMidYMid slice" class="w-full h-full relative z-0">
+                <defs>
+                    <!-- Boat Neon Glow -->
+                    <filter id="neon-boat" x="-50%" y="-50%" width="200%" height="200%">
+                        <feGaussianBlur stdDeviation="4" result="blur" />
+                        <feMerge>
+                            <feMergeNode in="blur" />
+                            <feMergeNode in="blur" />
+                            <feMergeNode in="SourceGraphic" />
+                        </feMerge>
+                    </filter>
+                    <filter id="neon-fish" x="-50%" y="-50%" width="200%" height="200%">
+                        <feGaussianBlur stdDeviation="6" result="blur" />
+                        <feMerge>
+                            <feMergeNode in="blur" />
+                            <feMergeNode in="blur" />
+                            <feMergeNode in="SourceGraphic" />
+                        </feMerge>
+                    </filter>
+                    
+                    <!-- Seamless Wave Pattern -->
+                    <!-- Creating a long wave that can be translated left seamlessly -->
+                    <path id="wave-path" d="M 0 350 Q 150 320 300 350 T 600 350 T 900 350 T 1200 350 T 1500 350 T 1800 350 T 2100 350 T 2400 350 L 2400 500 L 0 500 Z" />
+                </defs>
+
+                <!-- Moon / Night Sky Elements -->
+                <circle cx="1000" cy="120" r="30" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="2" />
+                <circle cx="1000" cy="120" r="40" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1" />
+                
+                <!-- LAYER 1: BACK WAVE -->
+                <g id="back-wave-group" fill="#0a0a0a" stroke="#111" stroke-width="2">
+                    <use href="#wave-path" x="0" y="-20" />
+                </g>
+
+                <!-- LAYER 2: BOAT GROUP -->
+                <!-- The boat sits vertically between the waves. -->
+                <g id="boat-wrapper">
+                    <!-- Boat Hull & Motor -->
+                    <path d="M 350 330 L 550 330 L 600 290 L 320 290 Z" fill="#111" stroke="#333" stroke-width="2" stroke-linejoin="round"/>
+                    <rect x="300" y="295" width="20" height="40" fill="#050505" stroke="#444" stroke-width="2"/>
+                    <!-- Console -->
+                    <rect x="420" y="250" width="30" height="40" fill="none" stroke="#555" stroke-width="2" />
+                    <!-- Neon Accent Line on Hull -->
+                    <line x1="330" y1="310" x2="570" y2="310" stroke="#00FF88" stroke-width="2" filter="url(#neon-boat)" opacity="0.8"/>
+                    
+                    <!-- Angler on front deck -->
+                    <g id="boat-angler">
+                        <path d="M 520 290 L 520 230 L 500 180" fill="none" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="495" cy="160" r="12" fill="none" stroke="white" stroke-width="4"/>
+                        <!-- Arm & Rod -->
+                        <g id="boat-arm">
+                            <path d="M 500 180 L 540 190" fill="none" stroke="white" stroke-width="4" stroke-linecap="round"/>
+                            <!-- Rod -->
+                            <path id="boat-rod" d="M 450 250 L 540 190 L 750 100" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                        </g>
+                    </g>
+                </g>
+
+                <!-- LAYER 3: FRONT WAVE -->
+                <g id="front-wave-group" fill="#050505" stroke="#222" stroke-width="2" opacity="0.95">
+                    <use href="#wave-path" x="0" y="0" />
+                </g>
+
+                <!-- LAYER 4: FISHING LINE & SPLASH (Rendered on top of front wave so it's fully visible) -->
+                <!-- Dynamic Fishing Line -->
+                <path id="boat-line" d="M 750 100 Q 750 100 750 100" fill="none" stroke="rgba(0,255,136,0.5)" stroke-width="1.5" filter="url(#neon-boat)" />
+                
+                <!-- Huge Strike Splash -->
+                <g id="boat-splash" opacity="0">
+                    <circle cx="850" cy="350" r="15" fill="none" stroke="white" stroke-width="2" />
+                    <circle cx="850" cy="350" r="30" fill="none" stroke="#00FF88" stroke-width="1" filter="url(#neon-boat)" />
+                    <path d="M 830 350 Q 850 280 870 350" fill="none" stroke="#00FF88" stroke-width="3" filter="url(#neon-boat)" />
+                </g>
+
+                <!-- The Catch (Big visible fish pulled HIGH above the waves) -->
+                <g id="boat-fish" opacity="0">
+                    <!-- Fish body drawn larger and thicker for visibility -->
+                    <path d="M 0 0 C 40 -20 80 -20 120 0 L 140 -10 L 140 10 L 120 0 C 80 20 40 20 0 0 Z" fill="#050505" stroke="#00FF88" stroke-width="3" filter="url(#neon-fish)" stroke-linejoin="round"/>
+                    <circle cx="20" cy="-3" r="3" fill="#00FF88"/>
+                    <!-- Gills & fins -->
+                    <path d="M 30 -10 Q 40 0 30 10 M 60 -15 L 70 -25 L 80 -15" fill="none" stroke="#00FF88" stroke-width="2"/>
+                </g>
+            </svg>
         </section>
 
-        <!-- NEWSLETTER -->
-        <section class="py-24 max-w-3xl mx-auto px-6 text-center main-elements opacity-0 translate-y-8">
-            <h2 class="text-2xl md:text-3xl font-bold mb-8">Zapisz się na powiadomienie o starcie</h2>
-            <form class="flex flex-col sm:flex-row gap-4 justify-center">
-                <input type="email" placeholder="Twój adres e-mail" required class="flex-1 bg-brand-surface border border-brand-border focus:border-brand-mint focus:outline-none text-white px-6 py-4 transition-colors">
-                <button type="submit" class="bg-brand-mint hover:bg-[#00cc6a] text-black font-bold px-8 py-4 transition-colors">
-                    POWIADOM MNIE
-                </button>
-            </form>
+        <!-- COMMUNITY & B2B -->
+        <section class="max-w-7xl mx-auto px-6 py-20">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                
+                <!-- TikTok Ideas -->
+                <a href="#" class="block group glass-panel p-8 hover:border-brand-mint transition-colors duration-300 text-center rounded-none relative overflow-hidden">
+                    <div class="absolute inset-0 bg-brand-mint/5 translate-y-full group-hover:translate-y-0 transition-transform duration-500"></div>
+                    <i class="ph ph-tiktok-logo text-4xl text-white group-hover:text-brand-mint transition-colors mb-4 block relative z-10"></i>
+                    <h3 class="text-xl font-light mb-2 relative z-10">Masz pomysł?</h3>
+                    <p class="text-gray-400 text-sm font-light mb-6 leading-relaxed relative z-10">
+                        Chcesz nowej funkcjonalności? Wpadnij na naszego TikToka, wrzuć pomysł w komentarz i zobacz proces tworzenia apki.
+                    </p>
+                    <span class="text-brand-mint text-xs font-bold uppercase tracking-widest relative z-10">Odwiedź TikTok &rarr;</span>
+                </a>
+
+                <!-- BuyCoffee -->
+                <a href="#" class="block group glass-panel p-8 hover:border-[#ffdd00] transition-colors duration-300 text-center rounded-none relative overflow-hidden">
+                    <div class="absolute inset-0 bg-[#ffdd00]/5 translate-y-full group-hover:translate-y-0 transition-transform duration-500"></div>
+                    <i class="ph ph-coffee text-4xl text-white group-hover:text-[#ffdd00] transition-colors mb-4 block relative z-10"></i>
+                    <h3 class="text-xl font-light mb-2 relative z-10">Wesprzyj projekt</h3>
+                    <p class="text-gray-400 text-sm font-light mb-6 leading-relaxed relative z-10">
+                        CzyZłowie.pl rozwija się dzięki wam. Postaw nam wirtualną kawę na BuyCoffee.to, aby serwery nowej wersji działały jeszcze szybciej!
+                    </p>
+                    <span class="text-[#ffdd00] text-xs font-bold uppercase tracking-widest relative z-10">Postaw Kawę &rarr;</span>
+                </a>
+
+                <!-- Cooperation -->
+                <a href="#" class="block group glass-panel p-8 hover:border-brand-mint transition-colors duration-300 text-center rounded-none relative overflow-hidden">
+                    <div class="absolute inset-0 bg-brand-mint/5 translate-y-full group-hover:translate-y-0 transition-transform duration-500"></div>
+                    <i class="ph ph-handshake text-4xl text-white group-hover:text-brand-mint transition-colors mb-4 block relative z-10"></i>
+                    <h3 class="text-xl font-light mb-2 relative z-10">Współpraca (B2B)</h3>
+                    <p class="text-gray-400 text-sm font-light mb-6 leading-relaxed relative z-10">
+                        Jesteśmy w pełni otwarci na współpracę. Szukamy kontaktów z nowoczesnymi markami wędkarskimi i technologicznymi.
+                    </p>
+                    <span class="text-brand-mint text-xs font-bold uppercase tracking-widest relative z-10">Napisz do nas &rarr;</span>
+                </a>
+
+            </div>
         </section>
 
         <!-- FOOTER / SEO -->
-        <footer class="border-t border-brand-border py-16 bg-[#080808]">
-            <div class="max-w-7xl mx-auto px-6 main-elements opacity-0 translate-y-8">
-                <h5 class="text-gray-400 font-bold mb-4 text-sm uppercase tracking-wider">CzyZłowie.pl – Profesjonalne dane meteo, hydro i kalendarz brań w Polsce</h5>
-                <p class="text-gray-500 text-xs md:text-sm leading-relaxed text-justify">
+        <footer class="border-t border-brand-border py-16 bg-[#030303]">
+            <div class="max-w-7xl mx-auto px-6">
+                <h5 class="text-gray-400 font-bold mb-4 text-xs uppercase tracking-widest">CzyZłowie.pl – Profesjonalne dane meteo, hydro i kalendarz brań w Polsce</h5>
+                <p class="text-gray-600 text-xs font-light leading-relaxed text-justify">
                     CzyZłowie.pl to nowoczesny system i aplikacja wędkarska dla wymagających wędkarzy. Odchodzimy od subiektywnych opisów łowisk na rzecz twardych, obiektywnych danych przestrzennych i środowiskowych. Nasza nowa odsłona agreguje na żywo profesjonalne źródła: odczyty wodowskazowe i komunikaty meteorologiczne IMGW (hydro, meteo, synop), wysoce precyzyjne prognozy Open-Meteo oraz zintegrowane odczyty stanu środowiska i jakości powietrza z GIOŚ. Rdzeniem systemu jest nasz ulepszony kalendarz solunarny (kalendarz brań), który poprzez pogłębione obliczenia astronomiczne, wpływ faz księżyca i zmian ciśnienia, z niezwykłą dokładnością wyznacza piki aktywności ryb.
                     Platforma oferuje również warstwy map przestrzennych, pozwalające łatwo zlokalizować slipy do wodowania, starorzecza, oraz strefy PZW. Zaimplementowaliśmy system ostrzeżeń o gwałtownych zjawiskach pogodowych, abyś zawsze bezpiecznie planował wyjazd nad wodę. Projekt powstaje jako multiplatformowe środowisko – pełna funkcjonalność będzie dostępna z poziomu nowoczesnego portalu Web oraz dedykowanych, natywnych aplikacji mobilnych dla systemów iOS i Android. Zbuduj swoją przewagę nad wodą opierając się wyłącznie na zaawansowanej analityce. Już wkrótce nowa era polskiego wędkarstwa.
                 </p>
-                <div class="mt-8 text-center text-gray-600 text-xs">
-                    &copy; 2026 CzyZłowie.pl. Wszelkie prawa zastrzeżone.
+                <div class="mt-12 text-center text-gray-700 text-xs font-mono">
+                    &copy; 2026 CzyZłowie.pl. Wszelkie prawa zastrzeżone. // CODE_CLEAN // DATA_DRIVEN
                 </div>
             </div>
         </footer>
@@ -268,55 +427,178 @@
 
     <script>
         document.addEventListener("DOMContentLoaded", () => {
-            const tl = gsap.timeline();
-            const armRod = document.getElementById("arm-rod");
-            const line = document.getElementById("fishing-line");
-            const fish = document.getElementById("caught-fish");
-            
-            const lineLength = line.getTotalLength();
-            
-            gsap.set(armRod, { svgOrigin: "200 270", rotation: -80 }); 
-            gsap.set(line, { strokeDasharray: lineLength, strokeDashoffset: lineLength });
-            gsap.set(fish, { x: 750, y: 450, rotation: 70, scale: 0.5 }); 
-            
-            // --- THE ANIMATION SEQUENCE ---
-            tl.to(armRod, { rotation: 0, duration: 0.7, ease: "power3.inOut" })
-              .to(line, { strokeDashoffset: 0, duration: 0.8, ease: "power2.out" }, "-=0.3")
-              .to(".splash-ring", { scale: 1, opacity: 0, duration: 0.8, stagger: 0.15, transformOrigin: "center", svgOrigin: "750 450", ease: "power1.out" }, "-=0.2")
-              .to(armRod, { rotation: 3, duration: 1.2, ease: "sine.inOut", yoyo: true, repeat: 1 })
-              .to(armRod, { rotation: 12, duration: 0.08, yoyo: true, repeat: 3, ease: "power1.inOut" })
-              .to(line, { strokeDashoffset: lineLength * 0.05, duration: 0.2 }, "<")
-              .to(armRod, { rotation: -65, duration: 0.4, ease: "power4.out" })
-              .to(line, { strokeDashoffset: lineLength, duration: 0.3 }, "<")
-              .to(fish, { opacity: 1, duration: 0.1 }, "<")
-              .to(fish, { x: 250, y: 100, rotation: -20, scale: 1.5, duration: 0.7, ease: "power2.out" }, "<")
-              .to("#preloader-svg", { scale: 10, opacity: 0, filter: "drop-shadow(0 0 100px #00FF88)", duration: 0.8, ease: "expo.in" }, "+=0.2")
-              
-              // TRANSITION TO MAIN CONTENT
-              .to("#preloader", { display: "none", duration: 0 })
-              .to("body", { overflow: "auto", duration: 0 }) // Włączamy scrollowanie
-              .to("#main-content", { display: "block", duration: 0 })
-              .to("#main-content", { opacity: 1, duration: 0.2 })
-              
-              // REVEAL LOGO
-              .fromTo("#logo-reveal", 
-                  { scale: 0.6, opacity: 0, filter: "blur(20px)" }, 
-                  { scale: 1, opacity: 1, filter: "blur(0px)", duration: 1.2, ease: "elastic.out(1, 0.6)" }
-              )
-              
-              // REVEAL REST OF THE PAGE SMOOTHLY
-              .to(".main-elements", {
-                  y: 0,
-                  opacity: 1,
-                  duration: 0.8,
-                  stagger: 0.1,
-                  ease: "power2.out"
-              }, "-=0.6");
+            gsap.registerPlugin(); // Ensure core is ready
 
-            // SKIP BUTTON
-            document.getElementById('skip-btn').addEventListener('click', () => {
-                tl.progress(1); 
+            // --- 1. PRELOADER ANIMATION ---
+            const preloaderTl = gsap.timeline({
+                onComplete: () => {
+                    document.getElementById('preloader').style.display = 'none';
+                    document.getElementById('main-content').style.display = 'block';
+                    document.body.classList.remove('locked');
+                    
+                    // Reveal Main Content
+                    gsap.to('#main-content', { opacity: 1, duration: 0.8, ease: "power2.out" });
+                }
             });
+
+            preloaderTl.to('#preloader-bar', { width: '100%', duration: 1.5, ease: "power3.inOut", delay: 0.2 })
+                       .to('#preloader-logo', { scale: 1.05, opacity: 0, filter: "blur(10px)", duration: 0.6, ease: "power2.in" }, "+=0.2")
+                       .to('#preloader', { opacity: 0, duration: 0.5 });
+
+
+            // --- 2. HERO SPINNING ANIMATION (Loop) ---
+            const spinArm = document.getElementById("spin-arm-rod");
+            const spinLine = document.getElementById("spin-line");
+            const spinWobbler = document.getElementById("spin-wobbler");
+            const spinPike = document.getElementById("spin-pike");
+            const strikeSplash = document.getElementById("strike-splash");
+            
+            // Initial setup for spinning
+            gsap.set(spinArm, { svgOrigin: "95 180", rotation: 0 });
+            gsap.set(spinPike, { x: 750, y: 400, rotation: -30, scale: 0.8 }); // Pike hidden deep
+            
+            const spinTl = gsap.timeline({ repeat: -1, repeatDelay: 2 });
+            
+            // Function to dynamically update fishing line path
+            const updateSpinLine = (endX, endY) => {
+                // Rod tip approximate coordinates based on rotation (simplified for visuals)
+                // Real trigonometry is overkill here; we just bind line start to a static point or use GSAP modifiers if strictly needed.
+                // For a highly stable visual, we update the `d` attribute directly drawing a line from rod tip area to lure.
+                gsap.set(spinLine, { attr: { d: `M 350 70 Q 500 ${(endY+70)/2} ${endX} ${endY}` } });
+            };
+
+            // Sequence:
+            // Cast back
+            spinTl.to(spinArm, { rotation: -60, duration: 0.6, ease: "power2.inOut" })
+                  // Snap forward (Cast)
+                  .to(spinArm, { rotation: 10, duration: 0.3, ease: "power4.out" })
+                  // Lure flies
+                  .set(spinWobbler, { opacity: 1, x: 350, y: 70 })
+                  .to(spinWobbler, { 
+                      x: 700, y: 320, 
+                      duration: 0.8, 
+                      ease: "power1.out",
+                      onUpdate: function() { 
+                          let x = gsap.getProperty(spinWobbler, "x");
+                          let y = gsap.getProperty(spinWobbler, "y");
+                          updateSpinLine(x, y);
+                      }
+                  }, "<")
+                  // Splash on landing
+                  .to("#spin-splash-1", { opacity: 1, r: 20, duration: 0.3 }, "-=0.1")
+                  .to("#spin-splash-1", { opacity: 0, duration: 0.2 })
+                  .to("#spin-splash-2", { opacity: 1, r: 40, duration: 0.4 }, "-=0.4")
+                  .to("#spin-splash-2", { opacity: 0, duration: 0.2 }, "-=0.1")
+                  
+                  // Twitching (2-3 jerks)
+                  .to(spinArm, { rotation: -10, duration: 0.2, ease: "power1.inOut" }, "+=0.5")
+                  .to(spinWobbler, { x: 670, y: 320, duration: 0.2, onUpdate: () => updateSpinLine(670, 320) }, "<")
+                  .to(spinArm, { rotation: 10, duration: 0.3, ease: "power1.inOut" })
+                  
+                  .to(spinArm, { rotation: -15, duration: 0.2, ease: "power1.inOut" }, "+=0.4")
+                  .to(spinWobbler, { x: 630, y: 320, duration: 0.2, onUpdate: () => updateSpinLine(630, 320) }, "<")
+                  .to(spinArm, { rotation: 5, duration: 0.3, ease: "power1.inOut" })
+                  
+                  // Huge Strike!
+                  .to(strikeSplash, { opacity: 1, scale: 1.5, transformOrigin: "center", duration: 0.3 }, "+=0.3")
+                  .to(strikeSplash, { opacity: 0, duration: 0.3 }, "+=0.2")
+                  .set(spinWobbler, { opacity: 0 }) // Wobbler disappears in mouth
+                  .set(spinPike, { opacity: 1, x: 630, y: 330 }) // Pike appears at surface
+                  
+                  // Hook set
+                  .to(spinArm, { rotation: 25, duration: 0.1 }) // Rod bends down from weight
+                  .to(spinArm, { rotation: -70, duration: 0.4, ease: "back.out(1.5)" }) // Violent yank back
+                  
+                  // Pull out fish
+                  .to(spinPike, { 
+                      x: 200, y: 150, 
+                      rotation: -80, 
+                      duration: 0.7, 
+                      ease: "power2.out",
+                      onUpdate: function() {
+                          let x = gsap.getProperty(spinPike, "x");
+                          let y = gsap.getProperty(spinPike, "y");
+                          // Connect line to fish mouth
+                          updateSpinLine(x+15, y); 
+                      }
+                  }, "<")
+                  // Hold fish for a moment, then fade and reset
+                  .to([spinPike, spinLine], { opacity: 0, duration: 0.5 }, "+=1")
+                  .to(spinArm, { rotation: 0, duration: 1, ease: "power2.inOut" });
+
+
+            // --- 3. WOW SECTION: BOAT WAVES & BOBBING ---
+            
+            // Continuous Wave Translation
+            // The wave path is designed to repeat perfectly. 
+            // Width of one loop is around 600px, so moving -600 creates a seamless infinite flow.
+            gsap.to("#back-wave-group", { x: -600, duration: 6, repeat: -1, ease: "none" });
+            gsap.to("#front-wave-group", { x: -600, duration: 4, repeat: -1, ease: "none" });
+
+            // Boat Bobbing & Rocking on the waves
+            const boatWrapper = document.getElementById("boat-wrapper");
+            gsap.set(boatWrapper, { svgOrigin: "450 330" }); // Pivot near bottom center of hull
+            
+            gsap.to(boatWrapper, { 
+                y: 12, 
+                rotation: -1.5, 
+                duration: 2.2, 
+                yoyo: true, 
+                repeat: -1, 
+                ease: "sine.inOut" 
+            });
+
+            // --- 4. WOW SECTION: BOAT FISHING LOOP ---
+            const boatArm = document.getElementById("boat-arm");
+            const boatLine = document.getElementById("boat-line");
+            const boatFish = document.getElementById("boat-fish");
+            const boatSplash = document.getElementById("boat-splash");
+
+            gsap.set(boatArm, { svgOrigin: "500 180", rotation: -60 });
+            gsap.set(boatFish, { x: 850, y: 450, rotation: 70, scale: 0.5 }); 
+            
+            const updateBoatLine = (endX, endY) => {
+                // Line from rod tip (approx 750,100 but dynamic with boat bobbing) 
+                // Using a relative starting point for simplicity in this visual context
+                gsap.set(boatLine, { attr: { d: `M 750 100 Q 800 ${(endY+100)/2} ${endX} ${endY}` } });
+            };
+
+            const boatTl = gsap.timeline({ repeat: -1, repeatDelay: 1.5 });
+
+            // Boat fishing sequence
+            boatTl.to(boatArm, { rotation: 0, duration: 0.7, ease: "power3.inOut" })
+                  // Line Cast
+                  .to(boatLine, { 
+                      attr: { d: "M 750 100 Q 800 200 850 350" }, 
+                      duration: 0.6, 
+                      ease: "power2.out" 
+                  }, "-=0.2")
+                  // Waiting/Bobbing
+                  .to(boatArm, { rotation: 4, duration: 1.2, ease: "sine.inOut", yoyo: true, repeat: 1 })
+                  // Small Bites
+                  .to(boatArm, { rotation: 10, duration: 0.1, yoyo: true, repeat: 3 })
+                  // Strike!
+                  .to(boatSplash, { opacity: 1, scale: 1.2, transformOrigin: "center", duration: 0.2 })
+                  .to(boatSplash, { opacity: 0, duration: 0.2 }, "+=0.1")
+                  .to(boatArm, { rotation: -70, duration: 0.4, ease: "power4.out" }, "-=0.3")
+                  // Pull Fish OUT of water HIGH in the air
+                  .to(boatFish, { opacity: 1, duration: 0.1 }, "<")
+                  .to(boatFish, { 
+                      x: 600, y: 50, // HIGH above front wave
+                      rotation: -20, 
+                      scale: 1, 
+                      duration: 0.7, 
+                      ease: "power2.out",
+                      onUpdate: function() {
+                          let x = gsap.getProperty(boatFish, "x");
+                          let y = gsap.getProperty(boatFish, "y");
+                          updateBoatLine(x + 20, y);
+                      }
+                  }, "<")
+                  // Fade out catch and reset
+                  .to([boatFish, boatLine], { opacity: 0, duration: 0.5 }, "+=1")
+                  .to(boatArm, { rotation: -60, duration: 1, ease: "power2.inOut" });
+
         });
     </script>
 </body>

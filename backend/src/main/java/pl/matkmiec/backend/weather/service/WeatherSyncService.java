@@ -27,6 +27,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -317,6 +318,9 @@ public class WeatherSyncService {
 
             int pastDays = weatherProperties.sync() != null ? weatherProperties.sync().openMeteoPastDays() : 1;
             int forecastDays = weatherProperties.sync() != null ? weatherProperties.sync().openMeteoForecastDays() : 6;
+            int concurrency = Math.max(1, weatherProperties.sync() != null ? weatherProperties.sync().parallelThreads() : 4);
+            int delayMs = weatherProperties.sync() != null ? weatherProperties.sync().openMeteoDelayMs() : 100;
+            Semaphore semaphore = new Semaphore(concurrency);
             LocalDateTime now = LocalDateTime.now();
 
             List<CompletableFuture<List<OpenMeteoForecast>>> futures;
@@ -324,6 +328,10 @@ public class WeatherSyncService {
                 futures = activeStations.stream()
                         .map(station -> CompletableFuture.supplyAsync(() -> {
                             try {
+                                semaphore.acquire();
+                                if (delayMs > 0) {
+                                    Thread.sleep(delayMs);
+                                }
                                 OpenMeteoResponseDto dto = openMeteoApiClient.fetchForecast(
                                         station.getLat(),
                                         station.getLon(),
@@ -333,9 +341,14 @@ public class WeatherSyncService {
                                 if (dto != null) {
                                     return openMeteoMapper.toForecastEntities(dto, station, now);
                                 }
+                            } catch (InterruptedException e) {
+                                Thread.currentThread().interrupt();
+                                log.warn("Przerwano wątek podczas pobierania prognozy Open-Meteo dla stacji {}", station.getId());
                             } catch (Exception e) {
                                 log.error("Nie udało się pobrać prognozy Open-Meteo dla stacji {} ({}): {}",
                                         station.getId(), station.getName(), e.getMessage());
+                            } finally {
+                                semaphore.release();
                             }
                             return Collections.<OpenMeteoForecast>emptyList();
                         }, executor))

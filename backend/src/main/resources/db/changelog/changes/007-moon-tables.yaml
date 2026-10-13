@@ -1,0 +1,237 @@
+databaseChangeLog:
+  - changeSet:
+      id: 011-create-moon-tables
+      author: matkmiec
+      changes:
+        - createTable:
+            tableName: moon_general_day
+            columns:
+              - column:
+                  name: calculation_date
+                  type: DATE
+                  constraints: { primaryKey: true, nullable: false }
+              - column:
+                  name: phase_name
+                  type: VARCHAR(50)
+                  constraints: { nullable: false }
+              - column:
+                  name: phase_polish_name
+                  type: VARCHAR(100)
+              - column:
+                  name: phase_english_name
+                  type: VARCHAR(100)
+              - column:
+                  name: phase_icon_code
+                  type: VARCHAR(50)
+              - column:
+                  name: phase_weather_icon
+                  type: VARCHAR(50)
+              - column:
+                  name: phase_value
+                  type: DOUBLE PRECISION
+              - column:
+                  name: illumination_percentage
+                  type: DOUBLE PRECISION
+              - column:
+                  name: moon_age_days
+                  type: DOUBLE PRECISION
+              - column:
+                  name: distance_km
+                  type: DOUBLE PRECISION
+              - column:
+                  name: is_perigee
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+              - column:
+                  name: is_apogee
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+              - column:
+                  name: distance_phenomenon
+                  type: VARCHAR(100)
+              - column:
+                  name: next_new_moon
+                  type: DATE
+              - column:
+                  name: next_first_quarter
+                  type: DATE
+              - column:
+                  name: next_full_moon
+                  type: DATE
+              - column:
+                  name: next_last_quarter
+                  type: DATE
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+
+        - createTable:
+            tableName: moon_station_day
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints: { primaryKey: true, nullable: false }
+              - column:
+                  name: station_id
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_moon_station_day_station
+                    references: imgw_meteo_station(id)
+              - column:
+                  name: calculation_date
+                  type: DATE
+                  constraints: { nullable: false }
+              - column:
+                  name: sunrise
+                  type: TIME
+              - column:
+                  name: sunset
+                  type: TIME
+              - column:
+                  name: solar_noon
+                  type: TIME
+              - column:
+                  name: day_length_seconds
+                  type: BIGINT
+              - column:
+                  name: day_length_formatted
+                  type: VARCHAR(50)
+              - column:
+                  name: day_length_diff_seconds
+                  type: BIGINT
+              - column:
+                  name: morning_golden_hour_start
+                  type: TIME
+              - column:
+                  name: morning_golden_hour_end
+                  type: TIME
+              - column:
+                  name: evening_golden_hour_start
+                  type: TIME
+              - column:
+                  name: evening_golden_hour_end
+                  type: TIME
+              - column:
+                  name: morning_blue_hour_start
+                  type: TIME
+              - column:
+                  name: morning_blue_hour_end
+                  type: TIME
+              - column:
+                  name: evening_blue_hour_start
+                  type: TIME
+              - column:
+                  name: evening_blue_hour_end
+                  type: TIME
+              - column:
+                  name: civil_dawn
+                  type: TIME
+              - column:
+                  name: civil_dusk
+                  type: TIME
+              - column:
+                  name: nautical_dawn
+                  type: TIME
+              - column:
+                  name: nautical_dusk
+                  type: TIME
+              - column:
+                  name: astronomical_dawn
+                  type: TIME
+              - column:
+                  name: astronomical_dusk
+                  type: TIME
+              - column:
+                  name: moonrise
+                  type: TIME
+              - column:
+                  name: moonset
+                  type: TIME
+              - column:
+                  name: moon_transit
+                  type: TIME
+              - column:
+                  name: moon_underfoot
+                  type: TIME
+              - column:
+                  name: moon_altitude_deg
+                  type: DOUBLE PRECISION
+              - column:
+                  name: moon_azimuth_deg
+                  type: DOUBLE PRECISION
+              - column:
+                  name: solunar_rating
+                  type: VARCHAR(50)
+              - column:
+                  name: solunar_score
+                  type: INT
+              - column:
+                  name: solunar_stars
+                  type: INT
+              - column:
+                  name: solunar_summary
+                  type: VARCHAR(500)
+              - column:
+                  name: moon_phase_influence
+                  type: VARCHAR(500)
+              - column:
+                  name: fishing_tip
+                  type: VARCHAR(500)
+              - column:
+                  name: major_period1_start
+                  type: TIME
+              - column:
+                  name: major_period1_end
+                  type: TIME
+              - column:
+                  name: major_period2_start
+                  type: TIME
+              - column:
+                  name: major_period2_end
+                  type: TIME
+              - column:
+                  name: minor_period1_start
+                  type: TIME
+              - column:
+                  name: minor_period1_end
+                  type: TIME
+              - column:
+                  name: minor_period2_start
+                  type: TIME
+              - column:
+                  name: minor_period2_end
+                  type: TIME
+              - column:
+                  name: peak_windows
+                  type: VARCHAR(500)
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+
+  - changeSet:
+      id: 012-add-moon-indexes-and-constraints
+      author: matkmiec
+      changes:
+        - addUniqueConstraint:
+            tableName: moon_station_day
+            columnNames: station_id, calculation_date
+            constraintName: uq_moon_station_day_station_date
+        - createIndex:
+            tableName: moon_station_day
+            indexName: idx_moon_station_day_date
+            columns:
+              - column: { name: calculation_date }
+        - createIndex:
+            tableName: moon_station_day
+            indexName: idx_moon_station_day_station
+            columns:
+              - column: { name: station_id }
+        - createIndex:
+            tableName: moon_station_day
+            indexName: idx_moon_station_day_lookup
+            columns:
+              - column: { name: station_id }
+              - column: { name: calculation_date }

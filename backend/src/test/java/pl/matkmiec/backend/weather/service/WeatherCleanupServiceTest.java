@@ -43,7 +43,7 @@ class WeatherCleanupServiceTest {
     void setUp() {
         weatherProperties = new WeatherProperties(
                 new WeatherProperties.Api("https://danepubliczne.imgw.pl/api", "https://api.open-meteo.com/v1"),
-                new WeatherProperties.Sync(true, "0 15 * * * *", "0 */10 * * * *", "0 */10 * * * *", "0 0 */6 * * *", 1, 6, 50, 48),
+                new WeatherProperties.Sync(true, "0 15 * * * *", "0 */10 * * * *", "0 */10 * * * *", "0 0 */6 * * *", 1, 6, 50, 4, 100, 48),
                 new WeatherProperties.Cleanup(true, "0 30 1 * * *", "Europe/Warsaw", 5)
         );
     }

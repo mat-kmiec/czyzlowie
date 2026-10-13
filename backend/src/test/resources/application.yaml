@@ -21,6 +21,48 @@ spring:
     enabled: true
     change-log: classpath:db/changelog/changelog-master.yaml
 
+resilience4j:
+  circuitbreaker:
+    instances:
+      default:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+        permittedNumberOfCallsInHalfOpenState: 3
+      openMeteo:
+        registerHealthIndicator: true
+        slidingWindowSize: 20
+        minimumNumberOfCalls: 10
+        failureRateThreshold: 60
+        waitDurationInOpenState: 15s
+        permittedNumberOfCallsInHalfOpenState: 3
+  ratelimiter:
+    instances:
+      default:
+        limitForPeriod: 20
+        limitRefreshPeriod: 1s
+        timeoutDuration: 0s
+      openMeteo:
+        limitForPeriod: 5
+        limitRefreshPeriod: 1s
+        timeoutDuration: 10s
+  retry:
+    instances:
+      default:
+        maxAttempts: 3
+        waitDuration: 500ms
+      openMeteo:
+        maxAttempts: 4
+        waitDuration: 1500ms
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+        retryExceptions:
+          - org.springframework.web.client.HttpClientErrorException
+          - org.springframework.web.client.ResourceAccessException
+          - pl.matkmiec.backend.weather.exception.WeatherApiClientException
+
 weather:
   api:
     imgw-base-url: https://danepubliczne.imgw.pl/api

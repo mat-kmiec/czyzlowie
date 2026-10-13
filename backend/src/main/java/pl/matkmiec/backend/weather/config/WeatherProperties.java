@@ -23,6 +23,8 @@ public record WeatherProperties(
             @DefaultValue("1") int openMeteoPastDays,
             @DefaultValue("6") int openMeteoForecastDays,
             @DefaultValue("50") int batchSize,
+            @DefaultValue("4") int parallelThreads,
+            @DefaultValue("100") int openMeteoDelayMs,
             @DefaultValue("48") int deduplicationWindowHours
     ) {}
 

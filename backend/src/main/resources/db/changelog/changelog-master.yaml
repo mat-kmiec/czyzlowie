@@ -17,3 +17,6 @@ databaseChangeLog:
   - include:
       file: changes/006-air-quality-tables.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changes/007-moon-tables.yaml
+      relativeToChangelogFile: true
