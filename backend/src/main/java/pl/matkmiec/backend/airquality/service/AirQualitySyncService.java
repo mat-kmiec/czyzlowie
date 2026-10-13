@@ -114,13 +114,19 @@ public class AirQualitySyncService {
                     CompletableFuture<List<GiosSensor>> future = CompletableFuture.supplyAsync(() -> {
                         try {
                             semaphore.acquire();
-                            List<GiosSensorResponseDto> sensorDtos = giosApiClient.fetchSensors(station.getId());
-                            return stationManagementService.autoDiscoverSensors(station, sensorDtos);
+                            try {
+                                List<GiosSensorResponseDto> sensorDtos = giosApiClient.fetchSensors(station.getId());
+                                return stationManagementService.autoDiscoverSensors(station, sensorDtos);
+                            } finally {
+                                semaphore.release();
+                            }
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            log.warn("Przerwano wątek podczas pobierania czujników dla stacji {}", station.getId());
+                            return Collections.<GiosSensor>emptyList();
                         } catch (Exception e) {
                             log.warn("Błąd pobierania czujników dla stacji {}: {}", station.getId(), e.getMessage());
                             return Collections.<GiosSensor>emptyList();
-                        } finally {
-                            semaphore.release();
                         }
                     }, executor);
                     futures.add(future);
@@ -178,26 +184,32 @@ public class AirQualitySyncService {
                     CompletableFuture<List<GiosMeasurement>> future = CompletableFuture.supplyAsync(() -> {
                         try {
                             semaphore.acquire();
-                            GiosMeasurementDataResponseDto dataDto = giosApiClient.fetchMeasurementData(sensor.getId());
-                            if (dataDto == null || dataDto.values() == null) {
-                                return Collections.<GiosMeasurement>emptyList();
-                            }
+                            try {
+                                GiosMeasurementDataResponseDto dataDto = giosApiClient.fetchMeasurementData(sensor.getId());
+                                if (dataDto == null || dataDto.values() == null) {
+                                    return Collections.<GiosMeasurement>emptyList();
+                                }
 
-                            List<GiosMeasurement> list = new ArrayList<>();
-                            for (GiosMeasurementValueDto valDto : dataDto.values()) {
-                                if (valDto != null && valDto.value() != null) {
-                                    GiosMeasurement entity = giosMapper.toMeasurementEntity(valDto, sensor, dataDto.key());
-                                    if (entity != null) {
-                                        list.add(entity);
+                                List<GiosMeasurement> list = new ArrayList<>();
+                                for (GiosMeasurementValueDto valDto : dataDto.values()) {
+                                    if (valDto != null && valDto.value() != null) {
+                                        GiosMeasurement entity = giosMapper.toMeasurementEntity(valDto, sensor, dataDto.key());
+                                        if (entity != null) {
+                                            list.add(entity);
+                                        }
                                     }
                                 }
+                                return list;
+                            } finally {
+                                semaphore.release();
                             }
-                            return list;
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            log.warn("Przerwano wątek podczas pobierania pomiarów dla czujnika {}", sensor.getId());
+                            return Collections.<GiosMeasurement>emptyList();
                         } catch (Exception e) {
                             log.warn("Błąd pobierania pomiarów dla czujnika {}: {}", sensor.getId(), e.getMessage());
                             return Collections.<GiosMeasurement>emptyList();
-                        } finally {
-                            semaphore.release();
                         }
                     }, executor);
                     futures.add(future);
@@ -283,12 +295,18 @@ public class AirQualitySyncService {
                     CompletableFuture<GiosIndexResponseDto> future = CompletableFuture.supplyAsync(() -> {
                         try {
                             semaphore.acquire();
-                            return giosApiClient.fetchAirQualityIndex(station.getId());
+                            try {
+                                return giosApiClient.fetchAirQualityIndex(station.getId());
+                            } finally {
+                                semaphore.release();
+                            }
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            log.warn("Przerwano wątek podczas pobierania indeksu dla stacji {}", station.getId());
+                            return null;
                         } catch (Exception e) {
                             log.warn("Błąd pobierania indeksu dla stacji {}: {}", station.getId(), e.getMessage());
                             return null;
-                        } finally {
-                            semaphore.release();
                         }
                     }, executor);
                     futures.add(future);
@@ -371,13 +389,19 @@ public class AirQualitySyncService {
                         CompletableFuture<List<IosAirQualityForecast>> future = CompletableFuture.supplyAsync(() -> {
                             try {
                                 semaphore.acquire();
-                                Map<String, Double> forecastMap = iosApiClient.fetchForecast(pollutant, teryt);
-                                return iosMapper.toForecastEntities(teryt, pollutant, forecastMap);
+                                try {
+                                    Map<String, Double> forecastMap = iosApiClient.fetchForecast(pollutant, teryt);
+                                    return iosMapper.toForecastEntities(teryt, pollutant, forecastMap);
+                                } finally {
+                                    semaphore.release();
+                                }
+                            } catch (InterruptedException e) {
+                                Thread.currentThread().interrupt();
+                                log.warn("Przerwano wątek podczas pobierania prognozy IOŚ dla {} / TERYT {}", pollutant, teryt);
+                                return Collections.<IosAirQualityForecast>emptyList();
                             } catch (Exception e) {
                                 log.warn("Błąd pobierania prognozy IOŚ dla {} / TERYT {}: {}", pollutant, teryt, e.getMessage());
                                 return Collections.<IosAirQualityForecast>emptyList();
-                            } finally {
-                                semaphore.release();
                             }
                         }, executor);
                         futures.add(future);

@@ -9,6 +9,9 @@ import org.springframework.http.MediaType;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.web.client.RestClient;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Configuration
 @RequiredArgsConstructor
 public class AirQualityRestClientConfig {
@@ -17,24 +20,36 @@ public class AirQualityRestClientConfig {
 
     @Bean
     public RestClient giosRestClient(ObjectMapper objectMapper) {
+        MappingJackson2HttpMessageConverter converter = new MappingJackson2HttpMessageConverter(objectMapper);
+        List<MediaType> mediaTypes = new ArrayList<>(converter.getSupportedMediaTypes());
+        mediaTypes.add(MediaType.valueOf("application/ld+json"));
+        mediaTypes.add(MediaType.valueOf("application/ld+json;charset=utf-8"));
+        mediaTypes.add(MediaType.ALL);
+        converter.setSupportedMediaTypes(mediaTypes);
+
         return RestClient.builder()
                 .baseUrl(airQualityProperties.giosBaseUrl())
                 .defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE, "application/ld+json", "*/*")
                 .messageConverters(converters -> {
                     converters.removeIf(c -> c instanceof MappingJackson2HttpMessageConverter);
-                    converters.add(new MappingJackson2HttpMessageConverter(objectMapper));
+                    converters.add(converter);
                 })
                 .build();
     }
 
     @Bean
     public RestClient iosRestClient(ObjectMapper objectMapper) {
+        MappingJackson2HttpMessageConverter converter = new MappingJackson2HttpMessageConverter(objectMapper);
+        List<MediaType> mediaTypes = new ArrayList<>(converter.getSupportedMediaTypes());
+        mediaTypes.add(MediaType.ALL);
+        converter.setSupportedMediaTypes(mediaTypes);
+
         return RestClient.builder()
                 .baseUrl(airQualityProperties.iosBaseUrl())
                 .defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE, "*/*")
                 .messageConverters(converters -> {
                     converters.removeIf(c -> c instanceof MappingJackson2HttpMessageConverter);
-                    converters.add(new MappingJackson2HttpMessageConverter(objectMapper));
+                    converters.add(converter);
                 })
                 .build();
     }

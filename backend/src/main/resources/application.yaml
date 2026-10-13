@@ -50,6 +50,8 @@ resilience4j:
         failureRateThreshold: 50
         waitDurationInOpenState: 10s
         permittedNumberOfCallsInHalfOpenState: 3
+        ignoreExceptions:
+          - io.github.resilience4j.ratelimiter.RequestNotPermitted
       openMeteo:
         registerHealthIndicator: true
         slidingWindowSize: 20
@@ -57,16 +59,46 @@ resilience4j:
         failureRateThreshold: 60
         waitDurationInOpenState: 15s
         permittedNumberOfCallsInHalfOpenState: 3
+        ignoreExceptions:
+          - io.github.resilience4j.ratelimiter.RequestNotPermitted
+      gios:
+        registerHealthIndicator: true
+        slidingWindowSize: 20
+        minimumNumberOfCalls: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+        permittedNumberOfCallsInHalfOpenState: 3
+        ignoreExceptions:
+          - io.github.resilience4j.ratelimiter.RequestNotPermitted
+          - org.springframework.web.client.HttpClientErrorException
+      ios:
+        registerHealthIndicator: true
+        slidingWindowSize: 20
+        minimumNumberOfCalls: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+        permittedNumberOfCallsInHalfOpenState: 3
+        ignoreExceptions:
+          - io.github.resilience4j.ratelimiter.RequestNotPermitted
+          - org.springframework.web.client.HttpClientErrorException
   ratelimiter:
     instances:
       default:
-        limitForPeriod: 20
+        limitForPeriod: 50
         limitRefreshPeriod: 1s
-        timeoutDuration: 0s
+        timeoutDuration: 60s
       openMeteo:
         limitForPeriod: 5
         limitRefreshPeriod: 1s
         timeoutDuration: 10s
+      gios:
+        limitForPeriod: 25
+        limitRefreshPeriod: 1s
+        timeoutDuration: 60s
+      ios:
+        limitForPeriod: 25
+        limitRefreshPeriod: 1s
+        timeoutDuration: 60s
   retry:
     instances:
       default:
@@ -81,6 +113,22 @@ resilience4j:
           - org.springframework.web.client.HttpClientErrorException
           - org.springframework.web.client.ResourceAccessException
           - pl.matkmiec.backend.weather.exception.WeatherApiClientException
+      gios:
+        maxAttempts: 3
+        waitDuration: 1000ms
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+        retryExceptions:
+          - org.springframework.web.client.ResourceAccessException
+          - org.springframework.web.client.HttpServerErrorException
+      ios:
+        maxAttempts: 3
+        waitDuration: 1000ms
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+        retryExceptions:
+          - org.springframework.web.client.ResourceAccessException
+          - org.springframework.web.client.HttpServerErrorException
 
 weather:
   api:

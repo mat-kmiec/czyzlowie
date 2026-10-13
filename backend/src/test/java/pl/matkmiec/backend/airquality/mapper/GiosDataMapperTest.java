@@ -49,6 +49,38 @@ class GiosDataMapperTest {
     }
 
     @Test
+    void shouldMapV1FlatStationDtoToEntity() {
+        GiosStationResponseDto dto = new GiosStationResponseDto(
+                11L,
+                "Czerniawa",
+                50.912475,
+                15.312190,
+                null,
+                "ul. Strażacka 7",
+                142L,
+                "Czerniawa",
+                "Świeradów-Zdrój",
+                "lubański",
+                "DOLNOŚLĄSKIE"
+        );
+
+        GiosStation entity = mapper.toStationEntity(dto);
+
+        assertNotNull(entity);
+        assertEquals(11L, entity.getId());
+        assertEquals("Czerniawa", entity.getStationName());
+        assertEquals(50.912475, entity.getGegrLat());
+        assertEquals(15.312190, entity.getGegrLon());
+        assertEquals(142L, entity.getCityId());
+        assertEquals("Czerniawa", entity.getCityName());
+        assertEquals("Świeradów-Zdrój", entity.getCommuneName());
+        assertEquals("lubański", entity.getDistrictName());
+        assertEquals("DOLNOŚLĄSKIE", entity.getProvinceName());
+        assertEquals("ul. Strażacka 7", entity.getAddressStreet());
+        assertTrue(entity.getIsActive());
+    }
+
+    @Test
     void shouldMapSensorDtoToEntity() {
         GiosStation station = GiosStation.builder().id(114L).stationName("Warszawa-Kondratowicza").build();
         GiosSensorParamDto param = new GiosSensorParamDto("pył zawieszony PM10", "PM10", "PM10", 3);
@@ -62,6 +94,31 @@ class GiosDataMapperTest {
         assertEquals("PM10", entity.getParamCode());
         assertEquals("PM10", entity.getParamFormula());
         assertEquals("pył zawieszony PM10", entity.getParamName());
+        assertTrue(entity.getIsActive());
+    }
+
+    @Test
+    void shouldMapV1FlatSensorDtoToEntity() {
+        GiosStation station = GiosStation.builder().id(11L).stationName("Czerniawa").build();
+        GiosSensorResponseDto dto = new GiosSensorResponseDto(
+                54L,
+                11L,
+                null,
+                "pył zawieszony PM10",
+                "PM10",
+                "PM10",
+                3
+        );
+
+        GiosSensor entity = mapper.toSensorEntity(dto, station);
+
+        assertNotNull(entity);
+        assertEquals(54L, entity.getId());
+        assertEquals(station, entity.getStation());
+        assertEquals("PM10", entity.getParamCode());
+        assertEquals("PM10", entity.getParamFormula());
+        assertEquals("pył zawieszony PM10", entity.getParamName());
+        assertEquals(3, entity.getIdParam());
         assertTrue(entity.getIsActive());
     }
 
@@ -115,6 +172,61 @@ class GiosDataMapperTest {
         assertEquals("PM10", entity.getStIndexCrParam());
         assertEquals("Dobry", entity.getPm10IndexLevel());
         assertEquals("Bardzo dobry", entity.getPm25IndexLevel());
+    }
+
+    @Test
+    void shouldMapV1FlatIndexDtoToEntity() {
+        GiosStation station = GiosStation.builder().id(11L).build();
+        GiosIndexResponseDto dto = new GiosIndexResponseDto(
+                11L,
+                "2026-10-13 13:20:28",
+                null,
+                0,
+                "Bardzo dobry",
+                "2026-10-13 12:00:00",
+                true,
+                "OZON",
+                "2026-10-13 13:20:28",
+                null,
+                "Bardzo dobry",
+                "2026-10-13 12:00:00",
+                null,
+                null,
+                null,
+                null,
+                "2026-10-13 13:20:28",
+                null,
+                "Bardzo dobry",
+                "2026-10-13 13:00:00",
+                "2026-10-13 13:20:28",
+                null,
+                "Bardzo dobry",
+                "2026-10-13 13:00:00",
+                "2026-10-13 13:20:28",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+        );
+
+        GiosAirQualityIndex entity = mapper.toIndexEntity(dto, station);
+
+        assertNotNull(entity);
+        assertEquals(station, entity.getStation());
+        assertEquals(0, entity.getIndexLevelId());
+        assertEquals("Bardzo dobry", entity.getIndexLevelName());
+        assertEquals("OZON", entity.getStIndexCrParam());
+        assertEquals("Bardzo dobry", entity.getPm10IndexLevel());
+        assertEquals("Bardzo dobry", entity.getO3IndexLevel());
+        assertEquals("Bardzo dobry", entity.getNo2IndexLevel());
+        assertNull(entity.getPm25IndexLevel());
     }
 
     @Test

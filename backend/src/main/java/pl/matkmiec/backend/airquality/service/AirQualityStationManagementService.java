@@ -45,8 +45,9 @@ public class AirQualityStationManagementService {
             if (station == null) {
                 GiosStation newStation = mapper.toStationEntity(dto);
                 if (newStation != null) {
-                    // Try to infer TERYT code if city id or commune is available
-                    if (dto.city() != null && dto.city().id() != null) {
+                    if (dto.cityId() != null) {
+                        newStation.setTerytCode(String.valueOf(dto.cityId()));
+                    } else if (dto.city() != null && dto.city().id() != null) {
                         newStation.setTerytCode(String.valueOf(dto.city().id()));
                     }
                     newStation.setLastSyncAt(now);
@@ -69,6 +70,26 @@ public class AirQualityStationManagementService {
                 }
                 if (dto.addressStreet() != null && !dto.addressStreet().equals(station.getAddressStreet())) {
                     station.setAddressStreet(dto.addressStreet());
+                    changed = true;
+                }
+                if (dto.cityId() != null && !dto.cityId().equals(station.getCityId())) {
+                    station.setCityId(dto.cityId());
+                    changed = true;
+                }
+                if (dto.cityName() != null && !dto.cityName().equals(station.getCityName())) {
+                    station.setCityName(dto.cityName());
+                    changed = true;
+                }
+                if (dto.communeName() != null && !dto.communeName().equals(station.getCommuneName())) {
+                    station.setCommuneName(dto.communeName());
+                    changed = true;
+                }
+                if (dto.districtName() != null && !dto.districtName().equals(station.getDistrictName())) {
+                    station.setDistrictName(dto.districtName());
+                    changed = true;
+                }
+                if (dto.provinceName() != null && !dto.provinceName().equals(station.getProvinceName())) {
+                    station.setProvinceName(dto.provinceName());
                     changed = true;
                 }
                 if (dto.city() != null) {
@@ -134,24 +155,35 @@ public class AirQualityStationManagementService {
                 }
             } else {
                 boolean changed = false;
+                String paramCode = dto.paramCode();
+                String paramFormula = dto.paramFormula();
+                String paramName = dto.paramName();
+                Integer idParam = dto.idParam();
+
                 if (dto.param() != null) {
-                    if (dto.param().paramCode() != null && !dto.param().paramCode().equals(sensor.getParamCode())) {
-                        sensor.setParamCode(dto.param().paramCode());
-                        changed = true;
-                    }
-                    if (dto.param().paramFormula() != null && !dto.param().paramFormula().equals(sensor.getParamFormula())) {
-                        sensor.setParamFormula(dto.param().paramFormula());
-                        changed = true;
-                    }
-                    if (dto.param().paramName() != null && !dto.param().paramName().equals(sensor.getParamName())) {
-                        sensor.setParamName(dto.param().paramName());
-                        changed = true;
-                    }
-                    if (dto.param().idParam() != null && !dto.param().idParam().equals(sensor.getIdParam())) {
-                        sensor.setIdParam(dto.param().idParam());
-                        changed = true;
-                    }
+                    if (paramCode == null || paramCode.isEmpty()) paramCode = dto.param().paramCode();
+                    if (paramFormula == null || paramFormula.isEmpty()) paramFormula = dto.param().paramFormula();
+                    if (paramName == null || paramName.isEmpty()) paramName = dto.param().paramName();
+                    if (idParam == null) idParam = dto.param().idParam();
                 }
+
+                if (paramCode != null && !paramCode.isEmpty() && !paramCode.equals(sensor.getParamCode())) {
+                    sensor.setParamCode(paramCode);
+                    changed = true;
+                }
+                if (paramFormula != null && !paramFormula.isEmpty() && !paramFormula.equals(sensor.getParamFormula())) {
+                    sensor.setParamFormula(paramFormula);
+                    changed = true;
+                }
+                if (paramName != null && !paramName.isEmpty() && !paramName.equals(sensor.getParamName())) {
+                    sensor.setParamName(paramName);
+                    changed = true;
+                }
+                if (idParam != null && !idParam.equals(sensor.getIdParam())) {
+                    sensor.setIdParam(idParam);
+                    changed = true;
+                }
+
                 if (changed) {
                     toSave.add(sensor);
                 }

@@ -23,19 +23,19 @@ public class GiosDataMapper {
             return null;
         }
 
-        String cityName = null;
-        Long cityId = null;
-        String communeName = null;
-        String districtName = null;
-        String provinceName = null;
+        String cityName = dto.cityName();
+        Long cityId = dto.cityId();
+        String communeName = dto.communeName();
+        String districtName = dto.districtName();
+        String provinceName = dto.provinceName();
 
         if (dto.city() != null) {
-            cityId = dto.city().id();
-            cityName = dto.city().name();
+            if (cityId == null) cityId = dto.city().id();
+            if (cityName == null) cityName = dto.city().name();
             if (dto.city().commune() != null) {
-                communeName = dto.city().commune().communeName();
-                districtName = dto.city().commune().districtName();
-                provinceName = dto.city().commune().provinceName();
+                if (communeName == null) communeName = dto.city().commune().communeName();
+                if (districtName == null) districtName = dto.city().commune().districtName();
+                if (provinceName == null) provinceName = dto.city().commune().provinceName();
             }
         }
 
@@ -60,16 +60,20 @@ public class GiosDataMapper {
             return null;
         }
 
-        String paramName = "";
-        String paramFormula = "";
-        String paramCode = "";
-        Integer idParam = null;
+        String paramName = dto.paramName() != null ? dto.paramName() : "";
+        String paramFormula = dto.paramFormula() != null ? dto.paramFormula() : "";
+        String paramCode = dto.paramCode() != null ? dto.paramCode() : "";
+        Integer idParam = dto.idParam();
 
         if (dto.param() != null) {
-            paramName = dto.param().paramName() != null ? dto.param().paramName() : "";
-            paramFormula = dto.param().paramFormula() != null ? dto.param().paramFormula() : "";
-            paramCode = dto.param().paramCode() != null ? dto.param().paramCode() : paramFormula;
-            idParam = dto.param().idParam();
+            if (paramName.isEmpty() && dto.param().paramName() != null) paramName = dto.param().paramName();
+            if (paramFormula.isEmpty() && dto.param().paramFormula() != null) paramFormula = dto.param().paramFormula();
+            if (paramCode.isEmpty() && dto.param().paramCode() != null) paramCode = dto.param().paramCode();
+            if (idParam == null) idParam = dto.param().idParam();
+        }
+
+        if (paramCode.isEmpty()) {
+            paramCode = !paramFormula.isEmpty() ? paramFormula : paramName;
         }
 
         return GiosSensor.builder()
@@ -107,12 +111,33 @@ public class GiosDataMapper {
             return null;
         }
 
-        Integer indexLevelId = null;
-        String indexLevelName = null;
+        Integer indexLevelId = dto.stIndexLevelId();
+        String indexLevelName = dto.stIndexLevelName();
         if (dto.stIndexLevel() != null) {
-            indexLevelId = dto.stIndexLevel().id();
-            indexLevelName = dto.stIndexLevel().indexLevelName();
+            if (indexLevelId == null) indexLevelId = dto.stIndexLevel().id();
+            if (indexLevelName == null) indexLevelName = dto.stIndexLevel().indexLevelName();
         }
+
+        String pm10Level = dto.pm10IndexLevelName();
+        if (pm10Level == null && dto.pm10IndexLevel() != null) pm10Level = dto.pm10IndexLevel().indexLevelName();
+
+        String pm25Level = dto.pm25IndexLevelName();
+        if (pm25Level == null && dto.pm25IndexLevel() != null) pm25Level = dto.pm25IndexLevel().indexLevelName();
+
+        String o3Level = dto.o3IndexLevelName();
+        if (o3Level == null && dto.o3IndexLevel() != null) o3Level = dto.o3IndexLevel().indexLevelName();
+
+        String no2Level = dto.no2IndexLevelName();
+        if (no2Level == null && dto.no2IndexLevel() != null) no2Level = dto.no2IndexLevel().indexLevelName();
+
+        String so2Level = dto.so2IndexLevelName();
+        if (so2Level == null && dto.so2IndexLevel() != null) so2Level = dto.so2IndexLevel().indexLevelName();
+
+        String coLevel = dto.coIndexLevelName();
+        if (coLevel == null && dto.coIndexLevel() != null) coLevel = dto.coIndexLevel().indexLevelName();
+
+        String c6h6Level = dto.c6h6IndexLevelName();
+        if (c6h6Level == null && dto.c6h6IndexLevel() != null) c6h6Level = dto.c6h6IndexLevel().indexLevelName();
 
         return GiosAirQualityIndex.builder()
                 .station(station)
@@ -122,19 +147,19 @@ public class GiosDataMapper {
                 .indexLevelName(indexLevelName)
                 .stIndexStatus(dto.stIndexStatus())
                 .stIndexCrParam(dto.stIndexCrParam())
-                .pm10IndexLevel(dto.pm10IndexLevel() != null ? dto.pm10IndexLevel().indexLevelName() : null)
+                .pm10IndexLevel(pm10Level)
                 .pm10SourceDataDate(parseDateTime(dto.pm10SourceDataDate()))
-                .pm25IndexLevel(dto.pm25IndexLevel() != null ? dto.pm25IndexLevel().indexLevelName() : null)
+                .pm25IndexLevel(pm25Level)
                 .pm25SourceDataDate(parseDateTime(dto.pm25SourceDataDate()))
-                .o3IndexLevel(dto.o3IndexLevel() != null ? dto.o3IndexLevel().indexLevelName() : null)
+                .o3IndexLevel(o3Level)
                 .o3SourceDataDate(parseDateTime(dto.o3SourceDataDate()))
-                .no2IndexLevel(dto.no2IndexLevel() != null ? dto.no2IndexLevel().indexLevelName() : null)
+                .no2IndexLevel(no2Level)
                 .no2SourceDataDate(parseDateTime(dto.no2SourceDataDate()))
-                .so2IndexLevel(dto.so2IndexLevel() != null ? dto.so2IndexLevel().indexLevelName() : null)
+                .so2IndexLevel(so2Level)
                 .so2SourceDataDate(parseDateTime(dto.so2SourceDataDate()))
-                .coIndexLevel(dto.coIndexLevel() != null ? dto.coIndexLevel().indexLevelName() : null)
+                .coIndexLevel(coLevel)
                 .coSourceDataDate(parseDateTime(dto.coSourceDataDate()))
-                .c6h6IndexLevel(dto.c6h6IndexLevel() != null ? dto.c6h6IndexLevel().indexLevelName() : null)
+                .c6h6IndexLevel(c6h6Level)
                 .c6h6SourceDataDate(parseDateTime(dto.c6h6SourceDataDate()))
                 .updatedAt(LocalDateTime.now())
                 .build();
