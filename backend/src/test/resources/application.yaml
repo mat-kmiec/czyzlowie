@@ -148,3 +148,27 @@ airquality:
     cron: "0 45 1 * * *"
     zone: "Europe/Warsaw"
     retention-days: 7
+
+app:
+  security:
+    jwt:
+      secret: testSecretKeyForJwtSigningMustBeAtLeast256BitsLongForHS256Algorithm2026Test!
+      access-token-expiration-ms: 1800000
+      refresh-token-expiration-ms: 2592000000
+      cookie-domain: ""
+      cookie-secure: false
+      cookie-same-site: "Lax"
+    cors:
+      allowed-origins: "*"
+    rate-limiting:
+      enabled: false # disable for unit/integration tests by default
+      auth-limit-per-minute: 100
+      brute-force-limit-per-minute: 50
+    pin:
+      expiration-minutes: 15
+      length: 4
+    social:
+      google:
+        client-id: test-google-client-id
+      apple:
+        client-id: test-apple-client-id

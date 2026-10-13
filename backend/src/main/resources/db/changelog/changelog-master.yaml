@@ -29,3 +29,6 @@ databaseChangeLog:
   - include:
       file: changes/010-fish-species-gear-and-safety.yaml
       relativeToChangelogFile: true
+  - include:
+      file: changes/011-user-auth-and-gdpr-tables.yaml
+      relativeToChangelogFile: true

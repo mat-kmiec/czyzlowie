@@ -4,6 +4,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -34,13 +35,26 @@ class SecurityConfigTest {
     }
 
     @Test
-    void shouldPermitUnauthenticatedGetRequest() throws Exception {
+    void shouldPermitUnauthenticatedGetRequestForPublicEndpoints() throws Exception {
         mockMvc.perform(get("/public/weather/stations/synop"))
                 .andExpect(status().isOk());
     }
 
     @Test
-    void shouldPermitUnauthenticatedPostRequestWithoutCsrf() throws Exception {
+    void shouldDenyUnauthenticatedAccessToProtectedUserEndpoints() throws Exception {
+        mockMvc.perform(get("/v1/users/me"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void shouldDenyUnauthenticatedAccessToAdminEndpoints() throws Exception {
+        mockMvc.perform(post("/admin/weather/sync/synop"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    void shouldPermitAdminPostRequestForAdminRole() throws Exception {
         mockMvc.perform(post("/admin/weather/sync/synop"))
                 .andExpect(status().isOk());
     }
